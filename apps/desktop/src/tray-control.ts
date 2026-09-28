@@ -1,29 +1,25 @@
-export interface TrayOverlay {
-  hide(): void;
-  isDestroyed(): boolean;
-  isVisible(): boolean;
-  showInactive(): void;
-}
+export type TrayToggleResult = "started" | "stopped";
 
-export type TrayToggleResult = "shown" | "hidden" | "unavailable";
-
-export function toggleTrayOverlay(overlay: TrayOverlay | null): TrayToggleResult {
-  if (overlay === null || overlay.isDestroyed()) return "unavailable";
-  if (overlay.isVisible()) {
-    overlay.hide();
-    return "hidden";
+export function toggleTrayRuntime(
+  running: boolean,
+  start: () => void,
+  stop: () => void
+): TrayToggleResult {
+  if (running) {
+    stop();
+    return "stopped";
   }
-  overlay.showInactive();
-  return "shown";
+  start();
+  return "started";
 }
 
-export function trayPresentation(visible: boolean): {
+export function trayPresentation(running: boolean): {
   readonly toggleLabel: string;
   readonly tooltip: string;
 } {
-  return visible
-    ? { toggleLabel: "Hide pet", tooltip: "AgentPup — pet visible" }
-    : { toggleLabel: "Show pet", tooltip: "AgentPup — pet hidden" };
+  return running
+    ? { toggleLabel: "Stop AgentPup", tooltip: "AgentPup — running" }
+    : { toggleLabel: "Start AgentPup", tooltip: "AgentPup — stopped" };
 }
 
 export function autostartTrayPresentation(enabled: boolean): {

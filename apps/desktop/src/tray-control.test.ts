@@ -2,51 +2,35 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   autostartTrayPresentation,
-  toggleTrayOverlay,
+  toggleTrayRuntime,
   trayPresentation
 } from "./tray-control.js";
 
-function overlay(visible: boolean) {
-  return {
-    hide: vi.fn(),
-    isDestroyed: vi.fn(() => false),
-    isVisible: vi.fn(() => visible),
-    showInactive: vi.fn()
-  };
-}
-
 describe("Windows tray control", () => {
-  it("hides a visible pet and offers to show it again", () => {
-    const window = overlay(true);
+  it("stops a running pet runtime and offers to start it again", () => {
+    const start = vi.fn();
+    const stop = vi.fn();
 
-    expect(toggleTrayOverlay(window)).toBe("hidden");
-    expect(window.hide).toHaveBeenCalledOnce();
-    expect(window.showInactive).not.toHaveBeenCalled();
+    expect(toggleTrayRuntime(true, start, stop)).toBe("stopped");
+    expect(stop).toHaveBeenCalledOnce();
+    expect(start).not.toHaveBeenCalled();
     expect(trayPresentation(false)).toEqual({
-      toggleLabel: "Show pet",
-      tooltip: "AgentPup — pet hidden"
+      toggleLabel: "Start AgentPup",
+      tooltip: "AgentPup — stopped"
     });
   });
 
-  it("shows a hidden pet without taking keyboard focus", () => {
-    const window = overlay(false);
+  it("starts a stopped pet runtime", () => {
+    const start = vi.fn();
+    const stop = vi.fn();
 
-    expect(toggleTrayOverlay(window)).toBe("shown");
-    expect(window.showInactive).toHaveBeenCalledOnce();
-    expect(window.hide).not.toHaveBeenCalled();
+    expect(toggleTrayRuntime(false, start, stop)).toBe("started");
+    expect(start).toHaveBeenCalledOnce();
+    expect(stop).not.toHaveBeenCalled();
     expect(trayPresentation(true)).toEqual({
-      toggleLabel: "Hide pet",
-      tooltip: "AgentPup — pet visible"
+      toggleLabel: "Stop AgentPup",
+      tooltip: "AgentPup — running"
     });
-  });
-
-  it("does nothing when the overlay has already been destroyed", () => {
-    const window = overlay(true);
-    window.isDestroyed.mockReturnValue(true);
-
-    expect(toggleTrayOverlay(window)).toBe("unavailable");
-    expect(window.hide).not.toHaveBeenCalled();
-    expect(window.showInactive).not.toHaveBeenCalled();
   });
 
   it("shows whether AgentPup will start with Windows", () => {

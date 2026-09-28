@@ -85,7 +85,9 @@ launcher preserves the selected WSL distribution and can recover when WSL's
 Windows-executable binfmt registration is temporarily unavailable.
 
 Installed Windows builds also provide a **Start with Windows** checkbox in the
-tray menu; it does not require Node.js or the source checkout.
+tray menu; it does not require Node.js or the source checkout. Clicking the tray
+icon stops the pet window and collector while retaining the small controller;
+clicking it again starts a fresh pet runtime.
 
 ## Pet designs
 
@@ -148,7 +150,7 @@ Running Electron from inside WSL opens a surfaced WSLg preview at the top-right 
 - `packages/collectors`: bounded Codex and Claude Code transcript adapters, metadata-only discovery, and a versioned WSL snapshot protocol.
 - `packages/integration`: idempotent hook configuration merging, backup-safe writes, inspection, and selective uninstall.
 - `packages/pets`: OpenPets V1/V2 validation, bounded ZIP import, fixed animation semantics, and installed-pet discovery.
-- `apps/desktop`: hardened Electron window, Windows tray show/hide controls, narrow preload bridge, compact status UI, OpenPets sprite renderer/library controls, reduced-motion styling, and synthetic demo mode.
+- `apps/desktop`: hardened Electron window, Windows tray runtime controls, narrow preload bridge, compact status UI, OpenPets sprite renderer/library controls, reduced-motion styling, and synthetic demo mode.
 - `scripts/build.mjs`: reproducible local bundling into `dist/` with no global build utility.
 
 Common Claude Code and Codex lifecycle paths, collector-process recovery, and

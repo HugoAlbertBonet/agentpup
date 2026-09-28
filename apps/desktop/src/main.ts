@@ -81,7 +81,7 @@ import {
 } from "./runtime-launch.js";
 import {
   autostartTrayPresentation,
-  toggleTrayOverlay,
+  toggleTrayRuntime,
   trayPresentation
 } from "./tray-control.js";
 import { createLoginItemSettings, resolveWslDistro } from "./login-item.js";
@@ -492,8 +492,8 @@ function ensureTopmost(window: BrowserWindow): void {
   window.moveTop();
 }
 
-function overlayVisible(): boolean {
-  return overlay !== null && !overlay.isDestroyed() && overlay.isVisible();
+function petRuntimeRunning(): boolean {
+  return overlay !== null && !overlay.isDestroyed();
 }
 
 function windowsAutostartEnabled(): boolean {
@@ -516,7 +516,7 @@ function setWindowsAutostart(enabled: boolean): void {
 
 function updateTrayPresentation(): void {
   if (tray === null || tray.isDestroyed()) return;
-  const presentation = trayPresentation(overlayVisible());
+  const presentation = trayPresentation(petRuntimeRunning());
   const autostart = autostartTrayPresentation(windowsAutostartEnabled());
   tray.setToolTip(presentation.tooltip);
   tray.setContextMenu(
@@ -543,9 +543,22 @@ function updateTrayPresentation(): void {
   );
 }
 
+function stopPetRuntime(): void {
+  collectorBridge?.stop();
+  collectorBridge = null;
+  collectorState = process.argv.includes("--demo") ? "demo" : "waiting";
+  if (overlay !== null && !overlay.isDestroyed()) overlay.destroy();
+  overlay = null;
+}
+
+function startPetRuntime(): void {
+  if (petRuntimeRunning()) return;
+  overlay = createOverlay();
+  startLiveCollector();
+}
+
 function togglePetFromTray(): void {
-  const result = toggleTrayOverlay(overlay);
-  if (result === "shown" && overlay !== null) ensureTopmost(overlay);
+  toggleTrayRuntime(petRuntimeRunning(), startPetRuntime, stopPetRuntime);
   updateTrayPresentation();
 }
 
@@ -834,6 +847,7 @@ if (!hasLock) {
   app.quit();
 } else {
   app.on("second-instance", () => {
+    if (!petRuntimeRunning()) startPetRuntime();
     overlay?.showInactive();
     if (overlay !== null) ensureTopmost(overlay);
     updateTrayPresentation();
@@ -853,9 +867,8 @@ if (!hasLock) {
     eventSnapshots.set("initial", await loadInitialEvents());
     publishStatus();
     registerIpc();
-    overlay = createOverlay();
     createWindowsTray();
-    startLiveCollector();
+    startPetRuntime();
 
     screen.on("display-metrics-changed", (_event, display) => {
       if (
@@ -890,4 +903,6 @@ app.on("before-quit", () => {
   collectorBridge?.stop();
   collectorBridge = null;
 });
-app.on("window-all-closed", () => app.quit());
+app.on("window-all-closed", () => {
+  if (tray === null || tray.isDestroyed()) app.quit();
+});

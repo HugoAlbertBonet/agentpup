@@ -37,8 +37,9 @@ that a headless assertion cannot establish.
    display's work area.
 5. Open settings, scroll through the full panel, change pet and status sizes,
    disable animation, hide/show the pet, and restore the desired values.
-6. Left-click the tray icon to hide and show AgentPup. Confirm **Quit AgentPup**
-   exits it.
+6. Left-click the tray icon to stop the pet window and collector, then click it
+   again to start a fresh runtime. Confirm **Quit AgentPup** exits the tray
+   controller too.
 
 ## Windows startup
 

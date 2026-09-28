@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 27 test files and 111 tests passed, followed by a successful build
+- Latest full npm run check: 27 test files and 110 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -193,6 +193,13 @@ lifecycle structure or aggregate counts.
   process tree and waits for all runtime children before relaunching. The
   reference desktop reported exactly one AgentPup main process after restart;
   packaged-versus-development coexistence still needs an explicit manual check.
+- A legacy `Claudepet.exe` package-test process and its WSL collector were found
+  running beside AgentPup and were terminated. The reference desktop then
+  reported zero legacy main processes and exactly one AgentPup main process.
+- The Windows tray icon now stops the overlay and collector runtime instead of
+  hiding the window. Its controller remains available in the tray so the next
+  click creates a new overlay and collector; full-process **Quit AgentPup**
+  remains a separate menu action.
 
 - A true mixed-DPI multi-display setup, negative desktop coordinates, taskbars
   on non-default edges, monitor unplug/replug, and moving the host between displays
