@@ -51,6 +51,7 @@ describe("Windows release configuration", () => {
     expect(workflow).toContain("npm ci");
     expect(workflow).toContain("npm run check");
     expect(workflow).toContain("npm run package:windows");
+    expect(workflow).toContain("scripts/smoke-windows-installer.ps1");
     expect(workflow).toContain("Tee-Object -FilePath package-windows.log");
     expect(workflow).toContain("name: AgentPup-Windows-package-log");
     expect(workflow).toContain("if: failure()");

@@ -1,11 +1,17 @@
 # Windows release-candidate checklist
 
-Use this checklist on a Windows machine or virtual machine that has never run
-AgentPup and does not contain the source checkout. Record the Windows version,
-WSL distribution, display scaling, installed Codex and Claude Code versions,
-and the release-candidate tag.
+The release workflow installs, launches, and uninstalls every candidate on a
+fresh GitHub-hosted Windows runner. This proves that the installer is
+self-contained without requiring a second physical computer. Use the remaining
+visual and provider checks on the available Windows computer. Record the Windows
+version, WSL distribution, display scaling, installed Codex and Claude Code
+versions, and the release-candidate tag.
 
 ## Install
+
+The workflow must pass **Smoke-test clean install, launch, and uninstall** before
+the artifact is accepted. The following manual checks cover Windows UI behavior
+that a headless assertion cannot establish.
 
 1. Open the successful **Windows release artifact** workflow run on GitHub.
 2. Download **AgentPup-Windows-unsigned** and extract the ZIP.
@@ -17,8 +23,9 @@ and the release-candidate tag.
 
 4. Run the installer. Windows may show an unrecognized-publisher warning
    because this release candidate is unsigned.
-5. Confirm installation succeeds without Node.js, npm, the source checkout, or
-   the original author's home directory.
+5. Confirm installation succeeds. The fresh-runner smoke test separately checks
+   installation without Node.js, npm, prior AgentPup data, or the original
+   author's home directory.
 
 ## Desktop behavior
 

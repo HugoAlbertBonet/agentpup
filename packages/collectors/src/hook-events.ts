@@ -1,4 +1,8 @@
-import type { Provider, RequestKind } from "../../status/src/index.js";
+import type {
+  EvidenceConfidence,
+  Provider,
+  RequestKind
+} from "../../status/src/index.js";
 import type {
   LiveRequestSnapshot,
   LiveSessionSnapshot
@@ -28,6 +32,7 @@ export interface HookEnvelope {
   requestId?: string;
   requestKind?: RequestKind;
   blocking?: boolean;
+  confidence?: EvidenceConfidence;
   resolution?: "approved" | "answered" | "denied" | "cancelled" | "unknown";
 }
 
@@ -112,7 +117,8 @@ export function normalizeHookPayload(
         event: "request.opened",
         requestId: id,
         requestKind: "approval",
-        blocking: true
+        blocking: true,
+        ...(provider === "codex" ? { confidence: "provisional" as const } : {})
       };
     }
     case "PreToolUse": {
@@ -265,11 +271,20 @@ export function reconcileHookSnapshots(
         break;
       case "request.opened": {
         if (event.requestId === undefined || event.requestKind === undefined) break;
+        const existingRequest = snapshot.requests.find(
+          (current) => current.requestId === event.requestId
+        );
+        const eventConfidence =
+          event.confidence ??
+          (event.provider === "codex" && event.eventId.includes(":PermissionRequest:")
+            ? "provisional"
+            : "confirmed");
         const request: LiveRequestSnapshot = {
           requestId: event.requestId,
           kind: event.requestKind,
           blocking: event.blocking ?? true,
-          confidence: "confirmed",
+          confidence:
+            existingRequest?.confidence === "confirmed" ? "confirmed" : eventConfidence,
           evidence: `${event.provider === "codex" ? "Codex" : "Claude Code"} lifecycle hook`
         };
         snapshot.requests = [

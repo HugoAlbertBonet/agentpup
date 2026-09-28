@@ -47,7 +47,8 @@ describe("provider hook normalization", () => {
       sessionId: "session-1",
       turnId: "turn-1",
       project: "payments",
-      requestKind: "approval"
+      requestKind: "approval",
+      confidence: "provisional"
     });
     expect(JSON.stringify(event)).not.toContain("PRIVATE_COMMAND");
   });
@@ -214,7 +215,10 @@ describe("provider hook normalization", () => {
       "2026-09-25T12:00:01.000Z"
     )!;
     const waiting = reconcileHookSnapshots([base], [opened], "wsl:Ubuntu");
-    expect(waiting[0]).toMatchObject({ activity: "working", requests: [{ kind: "approval" }] });
+    expect(waiting[0]).toMatchObject({
+      activity: "working",
+      requests: [{ kind: "approval", confidence: "provisional" }]
+    });
 
     const resolved = normalizeHookPayload(
       "codex",

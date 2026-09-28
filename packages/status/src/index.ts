@@ -319,7 +319,13 @@ export function aggregateStatus(state: StatusState): StatusSummary {
 
   for (const agent of agents) {
     if (agent.activity === "working" && agent.sourceConnected) working += 1;
-    if (Object.values(agent.requests).some((request) => !request.resolved)) needsYou += 1;
+    if (
+      Object.values(agent.requests).some(
+        (request) => !request.resolved && request.confidence === "confirmed"
+      )
+    ) {
+      needsYou += 1;
+    }
     if (agent.resultReady) resultsReady += 1;
     if (!agent.sourceConnected || agent.activity === "unknown") unknown += 1;
 
@@ -469,8 +475,8 @@ export function createDemoEvents(): StatusEvent[] {
         requestId: "approval-publish",
         kind: "approval",
         blocking: true,
-        confidence: "provisional",
-        evidence: "Synthetic permission hook"
+        confidence: "confirmed",
+        evidence: "Synthetic visible approval prompt"
       }
     },
     {

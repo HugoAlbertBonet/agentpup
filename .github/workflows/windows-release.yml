@@ -31,6 +31,9 @@ jobs:
             Write-Output "::error title=Windows packaging failed::$tail"
             exit $packageExitCode
           }
+      - name: Smoke-test clean install, launch, and uninstall
+        shell: pwsh
+        run: ./scripts/smoke-windows-installer.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: AgentPup-Windows-unsigned

@@ -1,6 +1,6 @@
 # Validation status
 
-Last updated: 2026-09-27.
+Last updated: 2026-09-28.
 
 This ledger records measured behavior separately from targets in
 [PLAN.md](PLAN.md). It is the continuation point for manual acceptance work.
@@ -35,6 +35,10 @@ lifecycle structure or aggregate counts.
   transcript fallback recognizes the structured user-rejected tool result and
   ignores its linked synthetic trailing user record.
 - Codex permission requests appear and clear after one-time approval.
+- Codex `PermissionRequest` lifecycle hooks are provisional because they run
+  before Codex combines policy and hook decisions. Provisional approvals remain
+  available as diagnostic evidence but do not trigger needs-you; a transcript or
+  stronger source must confirm that human input is actually pending.
 - Codex structured questions create exactly one needs-you entry. Answering or
   cancelling the question clears it without leaving a duplicate request.
 - Codex turn cancellation becomes interrupted and does not create a ready result.
@@ -77,6 +81,10 @@ lifecycle structure or aggregate counts.
 - The previous 0.0.0 NSIS output was an incomplete 185 KB stub beside a 108 MB
   payload archive. Release verification now rejects installers smaller than the
   embedded application payload and checks every required runtime file.
+- The Windows release workflow now installs each NSIS candidate into a fresh
+  temporary directory on a GitHub-hosted Windows runner, launches the installed
+  app for a bounded smoke test, and silently uninstalls it. Visual overlay and
+  real-provider behavior remain manual checks on the reference computer.
 - The settings and diagnostics views scroll to their full contents.
 - Transparent overlay regions pass clicks through to the application below.
 - Hovering the overlay and opening/closing the activity panel preserve keyboard

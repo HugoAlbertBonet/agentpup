@@ -103,6 +103,25 @@ describe("status reducer", () => {
     expect(Object.keys(state.agents["codex:wsl-ubuntu:session-1:root"]!.requests)).toHaveLength(2);
   });
 
+  it("does not request attention for provisional approval evidence", () => {
+    const state = replayEvents([
+      event(1, { type: "agent.started", identity: root, turnId: "turn-1" }),
+      event(2, {
+        type: "request.opened",
+        identity: root,
+        request: {
+          requestId: "approval-before-policy-resolution",
+          kind: "approval",
+          blocking: true,
+          confidence: "provisional",
+          evidence: "Permission hook observed before combined policy decisions"
+        }
+      })
+    ]);
+
+    expect(aggregateStatus(state)).toMatchObject({ working: 1, needsYou: 0 });
+  });
+
   it("ignores duplicate and out-of-order transitions", () => {
     const started = event(2, { type: "agent.started", identity: root, turnId: "turn-2" });
     const staleStop = event(1, {
