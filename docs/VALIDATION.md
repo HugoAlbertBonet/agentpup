@@ -182,6 +182,11 @@ lifecycle structure or aggregate counts.
   NSIS verification, clean install, installed-app launch, shutdown, uninstall,
   and artifact upload. The artifact is 114,877,773 bytes with digest
   `sha256:dfd9967cfa338a87dfa7270e58431547c0b7774e556307f076ac346b9160d643`.
+- Release candidate 12 passed the macOS/Linux packaging and packaged-launch
+  workflow (run 36487622926) and the Windows test, NSIS, clean-install, launch,
+  shutdown, uninstall, and upload workflow (run 36487622932). The Windows
+  artifact is 114,877,923 bytes with digest
+  `sha256:ed7dba42ff8d12a5bad9b3daf8ff76d0e8178e3e3ea01e776ca7cc9576a51fd9`.
 
 ## Still requiring manual or release validation
 
