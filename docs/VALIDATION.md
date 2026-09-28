@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 25 test files and 103 tests passed, followed by a successful build
+- Latest full npm run check: 26 test files and 109 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -154,6 +154,11 @@ lifecycle structure or aggregate counts.
   `sha256:aeef485f37935d58278be9046eb34772ec4b911efbd4e0eb243b9bfdaf7f5695`.
 
 ## Still requiring manual or release validation
+
+- Native macOS and Linux packaging workflows, direct bundled collector launch,
+  and platform-specific identities are implemented and covered by automated
+  tests. Native CI packaging and real-desktop overlay behavior have not yet been
+  measured.
 
 - A true mixed-DPI multi-display setup, negative desktop coordinates, taskbars
   on non-default edges, monitor unplug/replug, and moving the host between displays

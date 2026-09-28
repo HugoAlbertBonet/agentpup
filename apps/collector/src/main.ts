@@ -12,10 +12,13 @@ import { reconcileHookSnapshots } from "../../../packages/collectors/src/hook-ev
 import { inspectIntegration } from "../../../packages/integration/src/installer.js";
 import { providerVersion } from "../../../packages/integration/src/provider-command.js";
 import { agentPupDataHomes } from "../../../packages/integration/src/product-paths.js";
+import { collectorPrefixForEnvironment } from "../../../packages/collectors/src/collector-identity.js";
 
 const home = os.homedir();
-const distro = process.env.WSL_DISTRO_NAME ?? os.hostname();
-const collectorPrefix = `wsl:${distro}`;
+const collectorPrefix = collectorPrefixForEnvironment(
+  process.platform,
+  process.env.WSL_DISTRO_NAME
+);
 const collectorIds = [`${collectorPrefix}:codex`, `${collectorPrefix}:claude-code`];
 const agentPupHomes = agentPupDataHomes(home, process.env);
 const scanIntervalMs = 1_500;

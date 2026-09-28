@@ -119,6 +119,20 @@ workflow builds it on `windows-latest` and uploads it as an unsigned artifact.
 Windows may display an unrecognized-publisher warning until code signing is
 configured.
 
+Cross-platform packaging has begun with unsigned artifacts built on native CI
+runners:
+
+```sh
+npm run package:mac
+npm run package:linux
+```
+
+The macOS command produces a ZIP and the Linux command produces an AppImage.
+Both packages run the bundled local collector through Electron and do not
+require a separate Node.js installation. These artifacts are experimental until
+their overlay, tray, focus, fullscreen, and compositor behavior is validated on
+real macOS, Linux X11, and supported Wayland desktops.
+
 Before publishing a final release, follow the
 [clean-machine Windows checklist](docs/WINDOWS_RELEASE_CHECKLIST.md).
 

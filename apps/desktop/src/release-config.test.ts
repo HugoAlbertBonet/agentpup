@@ -57,4 +57,23 @@ describe("Windows release configuration", () => {
     expect(workflow).toContain("if: failure()");
     expect(workflow).toContain("actions/upload-artifact@v4");
   });
+
+  it("builds unsigned macOS and Linux artifacts on native CI runners", async () => {
+    const packageJson = JSON.parse(
+      await readFile(new URL("../../../package.json", import.meta.url), "utf8")
+    ) as Record<string, any>;
+    const workflow = await readFile(
+      new URL("../../../.github/workflows/cross-platform.yml", import.meta.url),
+      "utf8"
+    );
+
+    expect(packageJson.scripts["package:mac"]).toContain("--mac zip");
+    expect(packageJson.scripts["package:linux"]).toContain("--linux AppImage");
+    expect(packageJson.build.mac.target).toContain("zip");
+    expect(packageJson.build.linux.target).toContain("AppImage");
+    expect(workflow).toContain("macos-latest");
+    expect(workflow).toContain("ubuntu-latest");
+    expect(workflow).toContain("npm run check");
+    expect(workflow).toContain("actions/upload-artifact@v4");
+  });
 });

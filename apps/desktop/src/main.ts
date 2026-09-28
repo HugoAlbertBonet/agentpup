@@ -413,14 +413,14 @@ async function changeIntegration(
 
 function startLiveCollector(): void {
   if (process.argv.includes("--demo")) return;
-  const source = "wsl-live";
+  const source = process.platform === "win32" ? "wsl-live" : `native-${process.platform}`;
   const collectorPath = runtimeScriptPath(
     "collector.cjs",
     process.env.AGENTPUP_WSL_COLLECTOR_PATH ?? process.env.CLAUDEPET_WSL_COLLECTOR_PATH
   );
   if (collectorPath === null || collectorPath.length === 0) {
     collectorState = "unavailable";
-    console.error("[agentpup] WSL collector path is unavailable; using discovery only.");
+    console.error("[agentpup] Collector path is unavailable; using discovery only.");
     return;
   }
   let disconnected = false;

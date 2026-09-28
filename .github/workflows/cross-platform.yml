@@ -1,0 +1,40 @@
+name: macOS and Linux artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            package-script: package:mac
+            artifact-name: AgentPup-macOS-unsigned
+            artifact-path: release/*.zip
+          - os: ubuntu-latest
+            package-script: package:linux
+            artifact-name: AgentPup-Linux-AppImage
+            artifact-path: release/*.AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run ${{ matrix.package-script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
+          if-no-files-found: error

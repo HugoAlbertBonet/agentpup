@@ -47,9 +47,41 @@ export function createLineDecoder(
 export interface CollectorBridgeOptions {
   platform: NodeJS.Platform;
   collectorPath: string;
+  nativeExecutable?: string;
   wslDistro?: string;
   onLine(line: string): boolean;
   onDisconnect(reason: string, retryDelayMs: number): void;
+}
+
+export interface CollectorLaunch {
+  executable: string;
+  arguments: string[];
+  electronAsNode: boolean;
+}
+
+export function createCollectorLaunch(
+  platform: NodeJS.Platform,
+  collectorPath: string,
+  wslDistro: string | undefined,
+  nativeExecutable: string
+): CollectorLaunch {
+  if (platform === "win32") {
+    return {
+      executable: "wsl.exe",
+      arguments: [
+        ...(wslDistro === undefined ? [] : ["--distribution", wslDistro]),
+        "--exec",
+        "node",
+        collectorPath
+      ],
+      electronAsNode: false
+    };
+  }
+  return {
+    executable: nativeExecutable,
+    arguments: [collectorPath],
+    electronAsNode: true
+  };
 }
 
 export interface CollectorBridge {
@@ -130,21 +162,15 @@ export function startCollectorSupervisor(options: CollectorSupervisorOptions): C
 }
 
 export function startCollectorBridge(options: CollectorBridgeOptions): CollectorBridge {
-  const executable = options.platform === "win32" ? "wsl.exe" : "node";
-  const arguments_ =
-    options.platform === "win32"
-      ? [
-          ...(options.wslDistro === undefined
-            ? []
-            : ["--distribution", options.wslDistro]),
-          "--exec",
-          "node",
-          options.collectorPath
-        ]
-      : [options.collectorPath];
+  const launch = createCollectorLaunch(
+    options.platform,
+    options.collectorPath,
+    options.wslDistro,
+    options.nativeExecutable ?? process.execPath
+  );
   return startCollectorSupervisor({
     connect(callbacks) {
-      return startCollectorConnection(executable, arguments_, callbacks);
+      return startCollectorConnection(launch, callbacks);
     },
     onLine: options.onLine,
     onDisconnect: options.onDisconnect
@@ -152,13 +178,15 @@ export function startCollectorBridge(options: CollectorBridgeOptions): Collector
 }
 
 function startCollectorConnection(
-  executable: string,
-  arguments_: string[],
+  launch: CollectorLaunch,
   callbacks: CollectorConnectionCallbacks
 ): CollectorConnection {
-  const child = spawn(executable, arguments_, {
+  const child = spawn(launch.executable, launch.arguments, {
     windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"]
+    stdio: ["ignore", "pipe", "pipe"],
+    env: launch.electronAsNode
+      ? { ...process.env, ELECTRON_RUN_AS_NODE: "1" }
+      : process.env
   });
   let ended = false;
   const finish = (reason: string): void => {

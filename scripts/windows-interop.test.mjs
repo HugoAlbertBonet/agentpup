@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFile } from "node:fs/promises";
 
 import { createWindowsLaunch } from "./windows-interop.mjs";
 
@@ -24,5 +25,12 @@ describe("WSL Windows process launch", () => {
         "-NoProfile"
       ]
     });
+  });
+
+  it("waits for the previous Electron process before restarting", async () => {
+    const launcher = await readFile(new URL("./start-windows.mjs", import.meta.url), "utf8");
+
+    expect(launcher).toContain("Wait-Process -Id");
+    expect(launcher).toContain("AgentPup did not stop before restart");
   });
 });

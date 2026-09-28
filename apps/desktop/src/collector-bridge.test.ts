@@ -1,10 +1,31 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createCollectorLaunch,
   createLineDecoder,
   startCollectorSupervisor,
   type CollectorConnectionCallbacks
 } from "./collector-bridge.js";
+
+describe("collector process launch", () => {
+  it("uses WSL for the native Windows host", () => {
+    expect(createCollectorLaunch("win32", "/runtime/collector.cjs", "Ubuntu", "electron.exe"))
+      .toEqual({
+        executable: "wsl.exe",
+        arguments: ["--distribution", "Ubuntu", "--exec", "node", "/runtime/collector.cjs"],
+        electronAsNode: false
+      });
+  });
+
+  it("uses the bundled Electron executable as Node on macOS and Linux", () => {
+    expect(createCollectorLaunch("darwin", "/runtime/collector.cjs", undefined, "/AgentPup"))
+      .toEqual({
+        executable: "/AgentPup",
+        arguments: ["/runtime/collector.cjs"],
+        electronAsNode: true
+      });
+  });
+});
 
 describe("collector bridge framing", () => {
   it("reassembles split NDJSON messages and skips blank lines", () => {

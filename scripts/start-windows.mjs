@@ -88,13 +88,19 @@ $runtimeRoot = Join-Path $developmentRoot ("electron-" + $electronVersion)
 $applicationRoot = Join-Path $developmentRoot "app"
 $legacyRuntimePrefix = Join-Path $env:TEMP "Claudepet-electron-"
 
-Get-CimInstance Win32_Process |
+$agentPupProcesses = @(Get-CimInstance Win32_Process |
   Where-Object {
     $_.ExecutablePath -and
     ($_.ExecutablePath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
      $_.ExecutablePath.StartsWith($legacyRuntimePrefix, [StringComparison]::OrdinalIgnoreCase))
-  } |
-  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+  })
+$agentPupProcesses | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+$agentPupProcesses | ForEach-Object {
+  Wait-Process -Id $_.ProcessId -Timeout 10 -ErrorAction SilentlyContinue
+  if (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue) {
+    throw "AgentPup did not stop before restart (process $($_.ProcessId))."
+  }
+}
 
 if (-not (Test-Path (Join-Path $runtimeRoot "electron.exe"))) {
   New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null

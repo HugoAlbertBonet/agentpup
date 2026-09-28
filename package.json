@@ -25,6 +25,8 @@
     "integration:uninstall": "npm run build && node dist/integration.cjs uninstall",
     "package:windows": "npm run build && electron-builder --win nsis --x64 --publish never && node scripts/verify-windows-release.mjs",
     "package:windows:dir": "npm run build && electron-builder --win --x64 --dir",
+    "package:mac": "npm run build && electron-builder --mac zip --publish never",
+    "package:linux": "npm run build && electron-builder --linux AppImage --publish never",
     "start": "node scripts/start.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -52,6 +54,20 @@
       "icon": "apps/desktop/renderer/assets/tray-icon.png",
       "target": [
         "nsis"
+      ]
+    },
+    "mac": {
+      "icon": "apps/desktop/renderer/assets/tray-icon.png",
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "zip"
+      ]
+    },
+    "linux": {
+      "icon": "apps/desktop/renderer/assets/tray-icon.png",
+      "category": "Utility",
+      "target": [
+        "AppImage"
       ]
     },
     "nsis": {
