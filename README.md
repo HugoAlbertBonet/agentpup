@@ -137,3 +137,9 @@ reference Windows/WSL setup. Cross-frontend coverage, mixed-DPI and monitor
 lifecycle checks, polished roaming, signing, and clean-machine
 release validation remain. See [docs/VALIDATION.md](docs/VALIDATION.md) for the measured
 handoff and [docs/PLAN.md](docs/PLAN.md) for the implementation sequence.
+
+## License
+
+AgentPup is available under the [MIT License](LICENSE). Third-party assets and
+dependencies retain their respective terms; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

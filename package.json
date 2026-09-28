@@ -4,6 +4,7 @@
   "private": true,
   "description": "A desktop virtual pet that watches local coding agents and calls for attention when they need you.",
   "author": "AgentPup contributors",
+  "license": "MIT",
   "type": "module",
   "main": "dist/main.cjs",
   "engines": {
@@ -60,6 +61,7 @@
     },
     "files": [
       "dist/**/*",
+      "LICENSE",
       "THIRD_PARTY_NOTICES.md",
       "package.json"
     ],

@@ -13,6 +13,7 @@ describe("Windows release configuration", () => {
     expect(packageJson.scripts["package:windows:dir"]).toContain("--dir");
     expect(packageJson.version).toBe("0.1.0");
     expect(packageJson.author).toBe("AgentPup contributors");
+    expect(packageJson.license).toBe("MIT");
     expect(packageJson.build.appId).toBe("dev.agentpup.desktop");
     expect(packageJson.build.productName).toBe("AgentPup");
     expect(packageJson.build.win.target).toContain("nsis");
@@ -26,6 +27,17 @@ describe("Windows release configuration", () => {
         expect.objectContaining({ from: "dist/integration.cjs", to: "runtime/integration.cjs" })
       ])
     );
+  });
+
+  it("publishes the source under the MIT license", async () => {
+    const license = await readFile(
+      new URL("../../../LICENSE", import.meta.url),
+      "utf8"
+    );
+
+    expect(license).toContain("MIT License");
+    expect(license).toContain("Copyright (c) 2026 Hugo Albert Bonet");
+    expect(license).toContain("Permission is hereby granted, free of charge");
   });
 
   it("checks and packages on a native Windows CI runner", async () => {
