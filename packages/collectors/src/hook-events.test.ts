@@ -53,6 +53,26 @@ describe("provider hook normalization", () => {
     expect(JSON.stringify(event)).not.toContain("PRIVATE_COMMAND");
   });
 
+  it("clears a Codex approval when execution begins without human input", () => {
+    const event = normalizeHookPayload(
+      "codex",
+      {
+        hook_event_name: "PreToolUse",
+        session_id: "session-1",
+        turn_id: "turn-1",
+        cwd: "/workspace/payments",
+        tool_name: "exec_command"
+      },
+      "2026-09-25T12:00:01.000Z"
+    );
+
+    expect(event).toMatchObject({
+      event: "request.resolved",
+      requestId: "approval:turn-1:root:exec_command",
+      resolution: "approved"
+    });
+  });
+
   it("tracks Claude questions, subagents, and resolution without their content", () => {
     const question = normalizeHookPayload(
       "claude-code",
@@ -214,10 +234,25 @@ describe("provider hook normalization", () => {
       },
       "2026-09-25T12:00:01.000Z"
     )!;
-    const waiting = reconcileHookSnapshots([base], [opened], "wsl:Ubuntu");
+    const waiting = reconcileHookSnapshots(
+      [base],
+      [opened],
+      "wsl:Ubuntu",
+      Date.parse("2026-09-25T12:00:02.000Z")
+    );
     expect(waiting[0]).toMatchObject({
       activity: "working",
       requests: [{ kind: "approval", confidence: "provisional" }]
+    });
+
+    const confirmedWaiting = reconcileHookSnapshots(
+      [base],
+      [opened],
+      "wsl:Ubuntu",
+      Date.parse("2026-09-25T12:00:04.000Z")
+    );
+    expect(confirmedWaiting[0]).toMatchObject({
+      requests: [{ kind: "approval", confidence: "confirmed" }]
     });
 
     const resolved = normalizeHookPayload(

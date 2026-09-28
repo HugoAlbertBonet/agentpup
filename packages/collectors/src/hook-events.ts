@@ -9,6 +9,7 @@ import type {
 } from "./transcript-adapters.js";
 
 type JsonObject = Record<string, unknown>;
+const CODEX_APPROVAL_CONFIRMATION_GRACE_MS = 2_000;
 
 export type HookEventKind =
   | "agent.started"
@@ -123,7 +124,16 @@ export function normalizeHookPayload(
     }
     case "PreToolUse": {
       const toolName = string(payload.tool_name) ?? string(payload.toolName);
-      if (toolName !== "AskUserQuestion" && toolName !== "ExitPlanMode") return null;
+      if (toolName !== "AskUserQuestion" && toolName !== "ExitPlanMode") {
+        if (provider !== "codex") return null;
+        return {
+          ...base,
+          event: "request.resolved",
+          requestId: requestId("approval", payload, turnId, agentId),
+          requestKind: "approval",
+          resolution: "approved"
+        };
+      }
       const kind = toolName === "ExitPlanMode" ? "plan" : "question";
       return {
         ...base,
@@ -190,7 +200,8 @@ export function isHookEnvelope(value: unknown): value is HookEnvelope {
 export function reconcileHookSnapshots(
   transcriptSnapshots: readonly LiveSessionSnapshot[],
   hookEvents: readonly HookEnvelope[],
-  collectorPrefix: string
+  collectorPrefix: string,
+  now = Date.now()
 ): LiveSessionSnapshot[] {
   const snapshots = new Map<string, LiveSessionSnapshot>();
   const keyOf = (provider: Provider, sessionId: string, agentId: string): string =>
@@ -274,11 +285,16 @@ export function reconcileHookSnapshots(
         const existingRequest = snapshot.requests.find(
           (current) => current.requestId === event.requestId
         );
-        const eventConfidence =
+        const rawEventConfidence =
           event.confidence ??
           (event.provider === "codex" && event.eventId.includes(":PermissionRequest:")
             ? "provisional"
             : "confirmed");
+        const eventConfidence =
+          rawEventConfidence === "provisional" &&
+          now - Date.parse(event.observedAt) >= CODEX_APPROVAL_CONFIRMATION_GRACE_MS
+            ? "confirmed"
+            : rawEventConfidence;
         const request: LiveRequestSnapshot = {
           requestId: event.requestId,
           kind: event.requestKind,

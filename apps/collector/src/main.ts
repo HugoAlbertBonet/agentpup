@@ -78,7 +78,8 @@ async function scanOnce(): Promise<void> {
     const sessions = reconcileHookSnapshots(
       transcriptSessions,
       hookEvents,
-      collectorPrefix
+      collectorPrefix,
+      now
     ).filter(
       (session) =>
         session.requests.length > 0 || now - Date.parse(session.observedAt) <= 30 * 60_000

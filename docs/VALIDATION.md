@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 25 test files and 101 tests passed, followed by a successful build
+- Latest full npm run check: 25 test files and 103 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -35,10 +35,11 @@ lifecycle structure or aggregate counts.
   transcript fallback recognizes the structured user-rejected tool result and
   ignores its linked synthetic trailing user record.
 - Codex permission requests appear and clear after one-time approval.
-- Codex `PermissionRequest` lifecycle hooks are provisional because they run
-  before Codex combines policy and hook decisions. Provisional approvals remain
-  available as diagnostic evidence but do not trigger needs-you; a transcript or
-  stronger source must confirm that human input is actually pending.
+- Codex `PermissionRequest` lifecycle hooks begin as provisional because they
+  run before Codex combines policy and hook decisions. An ordinary `PreToolUse`
+  clears an automatically approved request; one that remains blocked beyond the
+  two-second grace period becomes confirmed and triggers needs-you. Existing
+  installations must repair hooks once to add ordinary Codex pre-tool coverage.
 - Codex structured questions create exactly one needs-you entry. Answering or
   cancelling the question clears it without leaving a duplicate request.
 - Codex turn cancellation becomes interrupted and does not create a ready result.
@@ -156,9 +157,10 @@ lifecycle structure or aggregate counts.
   and secure desktops, and presentation-mode policy
 - Rapid alternating clicks across interactive and transparent regions, touch
   input, and leaving the overlay during an interaction
-- Permission requests automatically resolved by another policy or hook,
-  continued stop hooks, foreground/background subagent combinations, and Codex
-  structured questions in other supported frontends
+- Live validation of permission requests automatically resolved by another
+  policy or hook after repairing the integration, continued stop hooks,
+  foreground/background subagent combinations, and Codex structured questions
+  in other supported frontends
 - Long-duration idle CPU, RSS/GPU, battery, hook latency, snapshot latency, and
   first-painted-badge measurements against the targets in the plan
 - Pet-offline behavior while an agent continues, full application crash

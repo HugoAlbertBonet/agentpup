@@ -39,7 +39,6 @@ const commonEvents: ReadonlyArray<{ event: string; matcher?: string }> = [
   { event: "SessionEnd" },
   { event: "UserPromptSubmit" },
   { event: "PermissionRequest" },
-  { event: "PreToolUse", matcher: "AskUserQuestion|ExitPlanMode" },
   { event: "PostToolUse" },
   { event: "Stop" },
   { event: "SubagentStart" },
@@ -55,8 +54,11 @@ export function buildProviderHooks(
   const eventSpecs = [
     ...commonEvents,
     ...(provider === "codex"
-      ? [{ event: "Interrupt" }]
-      : [{ event: "PostToolUseFailure" }])
+      ? [{ event: "PreToolUse" }, { event: "Interrupt" }]
+      : [
+          { event: "PreToolUse", matcher: "AskUserQuestion|ExitPlanMode" },
+          { event: "PostToolUseFailure" }
+        ])
   ];
   const hooks: Record<string, HookGroup[]> = {};
   for (const spec of eventSpecs) {

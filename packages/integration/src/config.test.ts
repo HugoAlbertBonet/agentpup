@@ -69,4 +69,12 @@ describe("hook configuration merging", () => {
     expect(additions.hooks?.Interrupt?.[0]?.hooks[0]?.timeout).toBe(3);
     expect(additions.hooks?.SessionStart?.[0]?.hooks[0]?.timeout).toBe(5);
   });
+
+  it("observes every Codex pre-tool event so automatic approvals can clear", () => {
+    const codex = buildProviderHooks("codex", "/usr/bin/node", "/repo/dist/hook.cjs");
+    const claude = buildProviderHooks("claude-code", "/usr/bin/node", "/repo/dist/hook.cjs");
+
+    expect(codex.hooks?.PreToolUse?.[0]?.matcher).toBeUndefined();
+    expect(claude.hooks?.PreToolUse?.[0]?.matcher).toBe("AskUserQuestion|ExitPlanMode");
+  });
 });
