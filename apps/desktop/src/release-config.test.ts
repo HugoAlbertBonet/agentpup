@@ -10,6 +10,7 @@ describe("Windows release configuration", () => {
 
     expect(packageJson.scripts["package:windows"]).not.toContain("--dir");
     expect(packageJson.scripts["package:windows"]).toContain("verify-windows-release.mjs");
+    expect(packageJson.scripts["package:windows"]).toContain("--publish never");
     expect(packageJson.scripts["package:windows:dir"]).toContain("--dir");
     expect(packageJson.version).toBe("0.1.0");
     expect(packageJson.author).toBe("AgentPup contributors");

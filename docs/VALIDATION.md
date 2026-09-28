@@ -112,6 +112,11 @@ lifecycle structure or aggregate counts.
   workflow exposed only an exit code through the public check API and skipped
   artifact upload, so package-log capture is being added before diagnosing the
   builder or verifier failure.
+- Windows workflow run 36476506979 (`v0.1.0-rc.4`) passed native Windows
+  checks and built `AgentPup-Setup-0.1.0.exe` plus its block map. The step then
+  failed because electron-builder implicitly attempted GitHub publication for
+  the tag without a `GH_TOKEN`. Packaging now passes `--publish never`; the
+  workflow remains responsible for uploading the verified unsigned artifact.
 
 ## Still requiring manual or release validation
 
