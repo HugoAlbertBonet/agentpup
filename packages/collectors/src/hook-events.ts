@@ -291,7 +291,7 @@ export function reconcileHookSnapshots(
             ? "provisional"
             : "confirmed");
         const eventConfidence =
-          rawEventConfidence === "provisional" &&
+          event.confidence === "provisional" &&
           now - Date.parse(event.observedAt) >= CODEX_APPROVAL_CONFIRMATION_GRACE_MS
             ? "confirmed"
             : rawEventConfidence;

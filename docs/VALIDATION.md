@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 26 test files and 109 tests passed, followed by a successful build
+- Latest full npm run check: 27 test files and 111 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -40,6 +40,10 @@ lifecycle structure or aggregate counts.
   clears an automatically approved request; one that remains blocked beyond the
   two-second grace period becomes confirmed and triggers needs-you. Existing
   installations must repair hooks once to add ordinary Codex pre-tool coverage.
+- Retained events produced by the legacy helper do not contain enough evidence
+  to distinguish an auto-approved command from a visible prompt. They now remain
+  provisional instead of producing false needs-you alerts; new Codex sessions
+  use the repaired hook configuration and retain confirmed approval alerts.
 - Codex structured questions create exactly one needs-you entry. Answering or
   cancelling the question clears it without leaving a duplicate request.
 - Codex turn cancellation becomes interrupted and does not create a ready result.
@@ -171,6 +175,10 @@ lifecycle structure or aggregate counts.
   and platform-specific identities are implemented and covered by automated
   tests. Native CI packaging passes; installed-app launch and real-desktop
   overlay behavior have not yet been measured on those platforms.
+- The WSL-to-Windows development launcher now terminates the previous Electron
+  process tree and waits for all runtime children before relaunching. The
+  reference desktop reported exactly one AgentPup main process after restart;
+  packaged-versus-development coexistence still needs an explicit manual check.
 
 - A true mixed-DPI multi-display setup, negative desktop coordinates, taskbars
   on non-default edges, monitor unplug/replug, and moving the host between displays

@@ -94,12 +94,23 @@ $agentPupProcesses = @(Get-CimInstance Win32_Process |
     ($_.ExecutablePath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
      $_.ExecutablePath.StartsWith($legacyRuntimePrefix, [StringComparison]::OrdinalIgnoreCase))
   })
-$agentPupProcesses | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
-$agentPupProcesses | ForEach-Object {
-  Wait-Process -Id $_.ProcessId -Timeout 10 -ErrorAction SilentlyContinue
-  if (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue) {
-    throw "AgentPup did not stop before restart (process $($_.ProcessId))."
-  }
+$agentPupProcesses |
+  Where-Object { $_.CommandLine -notmatch "--type=" } |
+  ForEach-Object { & taskkill.exe /PID $_.ProcessId /T /F | Out-Null }
+$shutdownDeadline = (Get-Date).AddSeconds(10)
+do {
+  $remainingAgentPupProcesses = @(Get-CimInstance Win32_Process |
+    Where-Object {
+      $_.ExecutablePath -and
+      ($_.ExecutablePath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
+       $_.ExecutablePath.StartsWith($legacyRuntimePrefix, [StringComparison]::OrdinalIgnoreCase))
+    })
+  if ($remainingAgentPupProcesses.Count -eq 0) { break }
+  Start-Sleep -Milliseconds 250
+} while ((Get-Date) -lt $shutdownDeadline)
+if ($remainingAgentPupProcesses.Count -ne 0) {
+  $remainingIds = ($remainingAgentPupProcesses | ForEach-Object { $_.ProcessId }) -join ", "
+  throw "AgentPup did not stop before restart (processes $remainingIds)."
 }
 
 if (-not (Test-Path (Join-Path $runtimeRoot "electron.exe"))) {

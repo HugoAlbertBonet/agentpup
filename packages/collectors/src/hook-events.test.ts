@@ -255,6 +255,18 @@ describe("provider hook normalization", () => {
       requests: [{ kind: "approval", confidence: "confirmed" }]
     });
 
+    const legacyOpened = { ...opened };
+    delete legacyOpened.confidence;
+    const legacyWaiting = reconcileHookSnapshots(
+      [base],
+      [legacyOpened],
+      "wsl:Ubuntu",
+      Date.parse("2026-09-25T13:00:00.000Z")
+    );
+    expect(legacyWaiting[0]).toMatchObject({
+      requests: [{ kind: "approval", confidence: "provisional" }]
+    });
+
     const resolved = normalizeHookPayload(
       "codex",
       {

@@ -30,7 +30,8 @@ describe("WSL Windows process launch", () => {
   it("waits for the previous Electron process before restarting", async () => {
     const launcher = await readFile(new URL("./start-windows.mjs", import.meta.url), "utf8");
 
-    expect(launcher).toContain("Wait-Process -Id");
+    expect(launcher).toContain("taskkill.exe");
+    expect(launcher).toContain("$shutdownDeadline");
     expect(launcher).toContain("AgentPup did not stop before restart");
   });
 });

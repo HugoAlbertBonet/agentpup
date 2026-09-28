@@ -17,10 +17,12 @@ jobs:
         include:
           - os: macos-latest
             package-script: package:mac
+            smoke-platform: mac
             artifact-name: AgentPup-macOS-unsigned
             artifact-path: release/*.zip
           - os: ubuntu-latest
             package-script: package:linux
+            smoke-platform: linux
             artifact-name: AgentPup-Linux-AppImage
             artifact-path: release/*.AppImage
     runs-on: ${{ matrix.os }}
@@ -33,6 +35,8 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run ${{ matrix.package-script }}
+      - name: Smoke-test packaged application launch
+        run: node scripts/smoke-unix-release.mjs ${{ matrix.smoke-platform }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}

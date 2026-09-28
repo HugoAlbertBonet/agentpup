@@ -74,6 +74,7 @@ describe("Windows release configuration", () => {
     expect(workflow).toContain("macos-latest");
     expect(workflow).toContain("ubuntu-latest");
     expect(workflow).toContain("npm run check");
+    expect(workflow).toContain("scripts/smoke-unix-release.mjs");
     expect(workflow).toContain("actions/upload-artifact@v4");
   });
 });
