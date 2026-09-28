@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import path from "node:path";
 
 import { createScriptLaunch, runtimeAssetPath, wslPathConversionLaunch } from "./runtime-launch.js";
 
 describe("packaged runtime launch policy", () => {
   it("loads packaged runtime scripts from Electron resources", () => {
-    expect(runtimeAssetPath({ isPackaged: true, resourcesPath: "C:\\Program Files\\Claudepet\\resources", moduleDirectory: "ignored" }, "collector.cjs")).toBe("C:\\Program Files\\Claudepet\\resources/runtime/collector.cjs");
+    const resourcesPath = "C:\\Program Files\\AgentPup\\resources";
+    expect(runtimeAssetPath({ isPackaged: true, resourcesPath, moduleDirectory: "ignored" }, "collector.cjs")).toBe(path.join(resourcesPath, "runtime", "collector.cjs"));
     expect(runtimeAssetPath({ isPackaged: false, resourcesPath: "ignored", moduleDirectory: "/repo/dist" }, "collector.cjs")).toBe("/repo/dist/collector.cjs");
   });
 

@@ -12,20 +12,27 @@ function executable(candidate: string): boolean {
   }
 }
 
+function executableNames(name: "codex" | "claude"): readonly string[] {
+  return process.platform === "win32"
+    ? [`${name}.exe`, `${name}.cmd`, `${name}.bat`, name]
+    : [name];
+}
+
 export function resolveProviderExecutable(
   name: "codex" | "claude",
   home = os.homedir(),
   pathValue = process.env.PATH ?? ""
 ): string | null {
+  const names = executableNames(name);
   const fromPath = pathValue
     .split(path.delimiter)
     .filter((directory) => directory.length > 0)
-    .map((directory) => path.join(directory, name));
+    .flatMap((directory) => names.map((candidate) => path.join(directory, candidate)));
   const candidates = [
     ...fromPath,
-    path.join(home, ".local", "bin", name),
-    path.join(home, ".claude", "local", name),
-    path.join(home, ".volta", "bin", name)
+    ...names.map((candidate) => path.join(home, ".local", "bin", candidate)),
+    ...names.map((candidate) => path.join(home, ".claude", "local", candidate)),
+    ...names.map((candidate) => path.join(home, ".volta", "bin", candidate))
   ];
   const nvmRoot = path.join(home, ".nvm", "versions", "node");
   try {
@@ -34,7 +41,11 @@ export function resolveProviderExecutable(
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort((left, right) => collator.compare(right, left));
-    candidates.push(...versions.map((version) => path.join(nvmRoot, version, "bin", name)));
+    candidates.push(
+      ...versions.flatMap((version) =>
+        names.map((candidate) => path.join(nvmRoot, version, "bin", candidate))
+      )
+    );
   } catch {
     // NVM is optional.
   }

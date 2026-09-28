@@ -54,9 +54,15 @@ describe("provider integration installer", () => {
     expect(second.changed).toEqual([]);
     expect((await inspectIntegration(home)).every((item) => item.installed)).toBe(true);
     expect(await readFile(deployedHookPath, "utf8")).toBe("HOOK_RUNTIME");
-    expect(await readFile(path.join(home, ".claude", "settings.json"), "utf8")).toContain(
-      deployedHookPath
-    );
+    const installedClaude = JSON.parse(
+      await readFile(path.join(home, ".claude", "settings.json"), "utf8")
+    ) as { hooks: Record<string, Array<{ hooks: Array<{ command?: string }> }>> };
+    expect(
+      Object.values(installedClaude.hooks)
+        .flatMap((groups) => groups)
+        .flatMap((group) => group.hooks)
+        .some((handler) => handler.command?.includes(deployedHookPath) === true)
+    ).toBe(true);
 
     await uninstallIntegration(home, deployedHookPath);
     expect(JSON.parse(await readFile(path.join(home, ".claude", "settings.json"), "utf8"))).toEqual(

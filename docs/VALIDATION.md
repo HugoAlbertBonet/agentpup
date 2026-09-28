@@ -92,6 +92,18 @@ lifecycle structure or aggregate counts.
 - Agent rows display locally bundled OpenAI and Claude provider marks alongside
   the provider name.
 
+## Release automation observations
+
+- The public repository is connected at
+  `github.com/HugoAlbertBonet/agentpup`; `main` and the release-candidate tag
+  workflow are active.
+- Windows workflow run 36475245001 (`v0.1.0-rc.1`) completed checkout, Node 24
+  setup, and `npm ci`, then failed in `npm run check`. It exposed extensionless
+  provider discovery and POSIX-only path assertions. Provider discovery now
+  checks native Windows `.exe`, `.cmd`, and `.bat` names, and the affected
+  tests use platform-native paths. The corrected suite passes locally; a native
+  Windows rerun remains required before marking the CI/NSIS check successful.
+
 ## Still requiring manual or release validation
 
 - A true mixed-DPI multi-display setup, negative desktop coordinates, taskbars
@@ -113,9 +125,8 @@ lifecycle structure or aggregate counts.
 - Live validation of the packaged first-run integration page, a successful run
   of the Windows CI/NSIS job, code signing, clean-machine installation,
   fresh-clone setup on a second machine, and removal without the original repository path
-- This workspace currently has no Git metadata or remote, GitHub CLI is absent,
-  and Windows Sandbox is not installed. A repository URL and separate Windows
-  machine/VM are therefore required to complete the CI and clean-machine checks.
+- GitHub CLI and Windows Sandbox are not installed in the reference environment.
+  A separate Windows machine or VM is still required for the clean-machine checks.
 - macOS, Linux X11, and Linux Wayland support; these remain outside the first
   Windows release claim
 
