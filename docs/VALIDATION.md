@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 24 test files and 94 tests passed, followed by a successful build
+- Latest full npm run check: 25 test files and 101 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -137,7 +137,14 @@ lifecycle structure or aggregate counts.
   upload with packaged tray autostart included. Artifact
   `AgentPup-Windows-unsigned` is 114,876,544 bytes with GitHub artifact digest
   `sha256:4e3701418c56b9c1567b0a3186175194432cf64ab3128fa390d12ab22991ab96`.
-  This is the candidate for the clean-machine checklist.
+  This was the candidate before automated clean-install coverage was added.
+- Windows workflow run 36478879228 (`v0.1.0-rc.7`) passed `npm ci`, all 101
+  tests, the native NSIS build, installer payload verification, clean install
+  into an empty directory on a fresh GitHub-hosted Windows runner, launch of the
+  installed app, process shutdown, silent uninstall, and artifact upload.
+  Artifact `AgentPup-Windows-unsigned` is 114,877,110 bytes with GitHub artifact
+  digest
+  `sha256:eb59bbd586a2146cac8db912218add40ffa89dc6b9261534d6facb7d207364f7`.
 
 ## Still requiring manual or release validation
 
@@ -158,10 +165,11 @@ lifecycle structure or aggregate counts.
   recovery, native Windows tray icon visibility/click behavior, and successful
   autostart after another Windows reboot
 - Live validation of the packaged first-run integration page, code signing,
-  clean-machine installation,
-  fresh-clone setup on a second machine, and removal without the original repository path
-- GitHub CLI and Windows Sandbox are not installed in the reference environment.
-  A separate Windows machine or VM is still required for the clean-machine checks.
+  startup registration across reboot, and interactive removal of provider hooks
+  without the original repository path
+- Visual overlay checks and native/WSL provider integration remain manual on the
+  reference computer. A second physical computer is no longer required for the
+  self-contained installer check.
 - macOS, Linux X11, and Linux Wayland support; these remain outside the first
   Windows release claim
 
@@ -170,8 +178,8 @@ lifecycle structure or aggregate counts.
 The user selected this product order on 2026-09-28. Outstanding reliability
 checks above remain release criteria and must not be inferred complete.
 
-1. Produce the Windows CI/NSIS artifact and perform a clean-machine
-   install/setup/autostart/uninstall trial.
+1. Finish the Windows visual, provider setup, autostart-after-reboot, and
+   integration-removal checks using the CI-verified NSIS artifact.
 2. Add verified macOS and Linux support, treating Linux X11 and each supported
    Wayland environment separately.
 3. Replace the bundled placeholder with an original default AgentPup design;
