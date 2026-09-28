@@ -83,5 +83,14 @@ if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === scriptPat
   if (platform !== "mac" && platform !== "linux") {
     throw new Error("Usage: node scripts/smoke-unix-release.mjs <mac|linux>");
   }
-  await smoke(path.resolve(path.dirname(scriptPath), ".."), platform);
+  try {
+    await smoke(path.resolve(path.dirname(scriptPath), ".."), platform);
+  } catch (error) {
+    const message = (error instanceof Error ? error.message : String(error))
+      .replaceAll("%", "%25")
+      .replaceAll("\r", "%0D")
+      .replaceAll("\n", "%0A");
+    console.error(`::error title=${platform} packaged launch failed::${message}`);
+    process.exitCode = 1;
+  }
 }
