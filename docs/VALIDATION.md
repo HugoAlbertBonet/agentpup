@@ -107,6 +107,11 @@ lifecycle structure or aggregate counts.
   and hook serialization now pass on Windows. One remaining development-runtime
   assertion embedded a POSIX path; it now constructs both the input and expected
   value with the host path module. A further native Windows rerun is required.
+- Windows workflow run 36476024260 (`v0.1.0-rc.3`) passed `npm ci` and all
+  checks on native Windows, then failed in the NSIS packaging step. The original
+  workflow exposed only an exit code through the public check API and skipped
+  artifact upload, so package-log capture is being added before diagnosing the
+  builder or verifier failure.
 
 ## Still requiring manual or release validation
 

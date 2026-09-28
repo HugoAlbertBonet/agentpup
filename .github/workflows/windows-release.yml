@@ -20,7 +20,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npm run package:windows
+      - name: Build and verify Windows installer
+        shell: pwsh
+        run: |
+          npm run package:windows 2>&1 | Tee-Object -FilePath package-windows.log
+          $packageExitCode = $LASTEXITCODE
+          if ($packageExitCode -ne 0) {
+            $tail = (Get-Content package-windows.log -Tail 30) -join " | "
+            $tail = $tail.Replace("%", "%25").Replace("`r", "%0D").Replace("`n", "%0A")
+            Write-Output "::error title=Windows packaging failed::$tail"
+            exit $packageExitCode
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: AgentPup-Windows-unsigned
@@ -29,3 +39,9 @@ jobs:
             release/*.blockmap
             release/latest*.yml
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: AgentPup-Windows-package-log
+          path: package-windows.log
+          if-no-files-found: warn
