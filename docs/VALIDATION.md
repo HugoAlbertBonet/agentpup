@@ -124,6 +124,12 @@ lifecycle structure or aggregate counts.
   `sha256:6b9442ac67bc935b12d26622c8612d0abc36c8a65395e51eb8d227468e95378e`.
   A newer candidate is required for the packaged tray autostart control before
   the clean-machine trial.
+- Windows workflow run 36477664888 (`v0.1.0-rc.6`) passed `npm ci`, all 100
+  tests, the native NSIS build, installer payload verification, and artifact
+  upload with packaged tray autostart included. Artifact
+  `AgentPup-Windows-unsigned` is 114,876,544 bytes with GitHub artifact digest
+  `sha256:4e3701418c56b9c1567b0a3186175194432cf64ab3128fa390d12ab22991ab96`.
+  This is the candidate for the clean-machine checklist.
 
 ## Still requiring manual or release validation
 
