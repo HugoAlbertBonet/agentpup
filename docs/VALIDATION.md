@@ -152,13 +152,25 @@ lifecycle structure or aggregate counts.
   upload with the complete Codex approval distinction. Artifact
   `AgentPup-Windows-unsigned` is 114,877,467 bytes with GitHub artifact digest
   `sha256:aeef485f37935d58278be9046eb34772ec4b911efbd4e0eb243b9bfdaf7f5695`.
+- Cross-platform workflow run 36482859316 (`v0.1.0-rc.9`) passed `npm ci`, all
+  109 tests, native packaging, and artifact upload on both `macos-latest` and
+  `ubuntu-latest`. The unsigned macOS ZIP artifact is 132,417,787 bytes with
+  digest `sha256:0e2a126419374af3e6aeef5784909e9730f3ef698f1a9cb026b77cb90d9ada4a`;
+  the Linux AppImage artifact is 128,486,011 bytes with digest
+  `sha256:876bde4255e73f333089cbc8254156b36b8e778e7b34132b4c7eee9d77264cb6`.
+  Packaging success does not establish overlay behavior on a real desktop.
+- Windows workflow run 36482859324 (`v0.1.0-rc.9`) also passed all 109 tests,
+  NSIS verification, clean install, installed-app launch, shutdown, uninstall,
+  and artifact upload after the shared collector changes. The Windows artifact
+  is 114,877,845 bytes with digest
+  `sha256:9014bbc6b408c0ba0b093cbaef024006beff361377570c345dcbada8344cde92`.
 
 ## Still requiring manual or release validation
 
 - Native macOS and Linux packaging workflows, direct bundled collector launch,
   and platform-specific identities are implemented and covered by automated
-  tests. Native CI packaging and real-desktop overlay behavior have not yet been
-  measured.
+  tests. Native CI packaging passes; installed-app launch and real-desktop
+  overlay behavior have not yet been measured on those platforms.
 
 - A true mixed-DPI multi-display setup, negative desktop coordinates, taskbars
   on non-default edges, monitor unplug/replug, and moving the host between displays
