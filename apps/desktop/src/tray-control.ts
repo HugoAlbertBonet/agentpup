@@ -25,3 +25,10 @@ export function trayPresentation(visible: boolean): {
     ? { toggleLabel: "Hide pet", tooltip: "AgentPup — pet visible" }
     : { toggleLabel: "Show pet", tooltip: "AgentPup — pet hidden" };
 }
+
+export function autostartTrayPresentation(enabled: boolean): {
+  readonly label: string;
+  readonly checked: boolean;
+} {
+  return { label: "Start with Windows", checked: enabled };
+}

@@ -84,6 +84,9 @@ Remove that login registration with `npm run autostart:windows:disable`. The
 launcher preserves the selected WSL distribution and can recover when WSL's
 Windows-executable binfmt registration is temporarily unavailable.
 
+Installed Windows builds also provide a **Start with Windows** checkbox in the
+tray menu; it does not require Node.js or the source checkout.
+
 ## Pet designs
 
 Click the pet to open agent activity, then choose the gear button to open **Pet settings**. Settings let you hide the character while retaining the status bar, resize the pet, disable sprite animation, and adjust the status bar's overall size, number font size, and row spacing. The design controls provide three actions:
@@ -115,6 +118,9 @@ that NSIS target from Linux or WSL requires Wine; the repository's Windows CI
 workflow builds it on `windows-latest` and uploads it as an unsigned artifact.
 Windows may display an unrecognized-publisher warning until code signing is
 configured.
+
+Before publishing a final release, follow the
+[clean-machine Windows checklist](docs/WINDOWS_RELEASE_CHECKLIST.md).
 
 The demo shows five fictional agents, including simultaneous work and a nonblocking question, a provisional approval request, one helper result, and parent/helper grouping. Click the pet or badge to open the detail panel. Use the round-arrow button to move the overlay to another corner. The overlay is configured to pass clicks through transparent areas; this behavior still needs the native-Windows feasibility checks in the plan.
 

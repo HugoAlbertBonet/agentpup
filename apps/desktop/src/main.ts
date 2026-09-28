@@ -79,7 +79,11 @@ import {
   runtimeAssetPath,
   wslPathConversionLaunch
 } from "./runtime-launch.js";
-import { toggleTrayOverlay, trayPresentation } from "./tray-control.js";
+import {
+  autostartTrayPresentation,
+  toggleTrayOverlay,
+  trayPresentation
+} from "./tray-control.js";
 import { createLoginItemSettings, resolveWslDistro } from "./login-item.js";
 
 protocol.registerSchemesAsPrivileged([
@@ -492,15 +496,43 @@ function overlayVisible(): boolean {
   return overlay !== null && !overlay.isDestroyed() && overlay.isVisible();
 }
 
+function windowsAutostartEnabled(): boolean {
+  return process.platform === "win32" && app.getLoginItemSettings().openAtLogin;
+}
+
+function setWindowsAutostart(enabled: boolean): void {
+  const loginItem = createLoginItemSettings({
+    platform: process.platform,
+    enabled,
+    isPackaged: app.isPackaged,
+    executablePath: process.execPath,
+    applicationPath: path.resolve(__dirname, ".."),
+    wslDistro: configuredWslDistro
+  });
+  if (loginItem === null) return;
+  app.setLoginItemSettings(loginItem);
+  console.info(`[agentpup] Windows autostart ${enabled ? "enabled" : "disabled"}.`);
+}
+
 function updateTrayPresentation(): void {
   if (tray === null || tray.isDestroyed()) return;
   const presentation = trayPresentation(overlayVisible());
+  const autostart = autostartTrayPresentation(windowsAutostartEnabled());
   tray.setToolTip(presentation.tooltip);
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
         label: presentation.toggleLabel,
         click: () => togglePetFromTray()
+      },
+      {
+        label: autostart.label,
+        type: "checkbox",
+        checked: autostart.checked,
+        click: (menuItem) => {
+          setWindowsAutostart(menuItem.checked);
+          updateTrayPresentation();
+        }
       },
       { type: "separator" },
       {
@@ -814,20 +846,7 @@ if (!hasLock) {
         ? false
         : undefined;
     if (requestedAutostart !== undefined) {
-      const loginItem = createLoginItemSettings({
-        platform: process.platform,
-        enabled: requestedAutostart,
-        isPackaged: app.isPackaged,
-        executablePath: process.execPath,
-        applicationPath: path.resolve(__dirname, ".."),
-        wslDistro: configuredWslDistro
-      });
-      if (loginItem !== null) {
-        app.setLoginItemSettings(loginItem);
-        console.info(
-          `[agentpup] Windows autostart ${requestedAutostart ? "enabled" : "disabled"}.`
-        );
-      }
+      setWindowsAutostart(requestedAutostart);
     }
     await refreshPetLibrary();
     registerPetProtocol();

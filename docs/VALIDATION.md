@@ -117,6 +117,13 @@ lifecycle structure or aggregate counts.
   failed because electron-builder implicitly attempted GitHub publication for
   the tag without a `GH_TOKEN`. Packaging now passes `--publish never`; the
   workflow remains responsible for uploading the verified unsigned artifact.
+- Windows workflow run 36476977238 (`v0.1.0-rc.5`) passed `npm ci`, all 99
+  tests, the native NSIS build, installer payload verification, and artifact
+  upload. Artifact `AgentPup-Windows-unsigned` is 114,875,830 bytes with
+  GitHub artifact digest
+  `sha256:6b9442ac67bc935b12d26622c8612d0abc36c8a65395e51eb8d227468e95378e`.
+  A newer candidate is required for the packaged tray autostart control before
+  the clean-machine trial.
 
 ## Still requiring manual or release validation
 
@@ -136,8 +143,8 @@ lifecycle structure or aggregate counts.
 - Pet-offline behavior while an agent continues, full application crash
   recovery, native Windows tray icon visibility/click behavior, and successful
   autostart after another Windows reboot
-- Live validation of the packaged first-run integration page, a successful run
-  of the Windows CI/NSIS job, code signing, clean-machine installation,
+- Live validation of the packaged first-run integration page, code signing,
+  clean-machine installation,
   fresh-clone setup on a second machine, and removal without the original repository path
 - GitHub CLI and Windows Sandbox are not installed in the reference environment.
   A separate Windows machine or VM is still required for the clean-machine checks.

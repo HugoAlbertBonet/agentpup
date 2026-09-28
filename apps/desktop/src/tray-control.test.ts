@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { toggleTrayOverlay, trayPresentation } from "./tray-control.js";
+import {
+  autostartTrayPresentation,
+  toggleTrayOverlay,
+  trayPresentation
+} from "./tray-control.js";
 
 function overlay(visible: boolean) {
   return {
@@ -43,5 +47,16 @@ describe("Windows tray control", () => {
     expect(toggleTrayOverlay(window)).toBe("unavailable");
     expect(window.hide).not.toHaveBeenCalled();
     expect(window.showInactive).not.toHaveBeenCalled();
+  });
+
+  it("shows whether AgentPup will start with Windows", () => {
+    expect(autostartTrayPresentation(true)).toEqual({
+      label: "Start with Windows",
+      checked: true
+    });
+    expect(autostartTrayPresentation(false)).toEqual({
+      label: "Start with Windows",
+      checked: false
+    });
   });
 });
