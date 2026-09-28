@@ -103,6 +103,10 @@ lifecycle structure or aggregate counts.
   checks native Windows `.exe`, `.cmd`, and `.bat` names, and the affected
   tests use platform-native paths. The corrected suite passes locally; a native
   Windows rerun remains required before marking the CI/NSIS check successful.
+- Windows workflow run 36475782698 (`v0.1.0-rc.2`) confirmed provider discovery
+  and hook serialization now pass on Windows. One remaining development-runtime
+  assertion embedded a POSIX path; it now constructs both the input and expected
+  value with the host path module. A further native Windows rerun is required.
 
 ## Still requiring manual or release validation
 

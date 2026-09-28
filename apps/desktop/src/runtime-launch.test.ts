@@ -7,7 +7,8 @@ describe("packaged runtime launch policy", () => {
   it("loads packaged runtime scripts from Electron resources", () => {
     const resourcesPath = "C:\\Program Files\\AgentPup\\resources";
     expect(runtimeAssetPath({ isPackaged: true, resourcesPath, moduleDirectory: "ignored" }, "collector.cjs")).toBe(path.join(resourcesPath, "runtime", "collector.cjs"));
-    expect(runtimeAssetPath({ isPackaged: false, resourcesPath: "ignored", moduleDirectory: "/repo/dist" }, "collector.cjs")).toBe("/repo/dist/collector.cjs");
+    const moduleDirectory = path.join(path.sep, "repo", "dist");
+    expect(runtimeAssetPath({ isPackaged: false, resourcesPath: "ignored", moduleDirectory }, "collector.cjs")).toBe(path.join(moduleDirectory, "collector.cjs"));
   });
 
   it("launches packaged scripts through a selected WSL distribution without a shell", () => {
