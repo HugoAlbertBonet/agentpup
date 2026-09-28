@@ -168,6 +168,20 @@ lifecycle structure or aggregate counts.
   and artifact upload after the shared collector changes. The Windows artifact
   is 114,877,845 bytes with digest
   `sha256:9014bbc6b408c0ba0b093cbaef024006beff361377570c345dcbada8344cde92`.
+- Cross-platform workflow run 36485750161 (`v0.1.0-rc.10`) introduced an
+  eight-second packaged-app launch gate. macOS passed; Linux failed without a
+  useful public log, so the workflow now emits an explicit annotation and
+  uploads its bounded launch log on failure.
+- Cross-platform workflow run 36486420645 (`v0.1.0-rc.11`) passed all 111
+  tests, packaging, packaged-app launch, and artifact upload on both native
+  runners. The macOS ZIP is 132,417,431 bytes with digest
+  `sha256:31b6ccd1a283756aabb5832412f8144768d5985e74cd2f9d0b60da24e25ce718`;
+  the Linux AppImage is 128,485,761 bytes with digest
+  `sha256:fb1d0f2de6fc71873d2bd5b46db8d99b5692ae3fc280060fcf98263a84657e0a`.
+- Windows workflow run 36486420707 (`v0.1.0-rc.11`) passed all 111 tests,
+  NSIS verification, clean install, installed-app launch, shutdown, uninstall,
+  and artifact upload. The artifact is 114,877,773 bytes with digest
+  `sha256:dfd9967cfa338a87dfa7270e58431547c0b7774e556307f076ac346b9160d643`.
 
 ## Still requiring manual or release validation
 
