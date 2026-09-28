@@ -146,6 +146,12 @@ lifecycle structure or aggregate counts.
   Artifact `AgentPup-Windows-unsigned` is 114,877,110 bytes with GitHub artifact
   digest
   `sha256:eb59bbd586a2146cac8db912218add40ffa89dc6b9261534d6facb7d207364f7`.
+- Windows workflow run 36479747284 (`v0.1.0-rc.8`) passed `npm ci`, all 103
+  tests, the native NSIS build, installer payload verification, fresh-runner
+  install, installed-app launch, shutdown, silent uninstall, and artifact
+  upload with the complete Codex approval distinction. Artifact
+  `AgentPup-Windows-unsigned` is 114,877,467 bytes with GitHub artifact digest
+  `sha256:aeef485f37935d58278be9046eb34772ec4b911efbd4e0eb243b9bfdaf7f5695`.
 
 ## Still requiring manual or release validation
 
