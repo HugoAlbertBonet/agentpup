@@ -1,0 +1,84 @@
+{
+  "name": "agentpup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A desktop virtual pet that watches local coding agents and calls for attention when they need you.",
+  "author": "AgentPup contributors",
+  "type": "module",
+  "main": "dist/main.cjs",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "npm run typecheck && npm test && npm run build",
+    "demo": "npm run build && node scripts/start.mjs --demo",
+    "dev": "npm run build && node scripts/start.mjs",
+    "dev:windows": "npm run build && node scripts/start-windows.mjs",
+    "demo:windows": "npm run build && node scripts/start-windows.mjs --demo",
+    "autostart:windows": "npm run build && node scripts/start-windows.mjs --install-autostart",
+    "autostart:windows:disable": "npm run build && node scripts/start-windows.mjs --remove-autostart",
+    "integration:setup": "npm run build && node dist/integration.cjs setup",
+    "integration:preview": "npm run build && node dist/integration.cjs setup --dry-run",
+    "integration:doctor": "npm run build && node dist/integration.cjs doctor",
+    "integration:uninstall": "npm run build && node dist/integration.cjs uninstall",
+    "package:windows": "npm run build && electron-builder --win nsis --x64 && node scripts/verify-windows-release.mjs",
+    "package:windows:dir": "npm run build && electron-builder --win --x64 --dir",
+    "start": "node scripts/start.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.2",
+    "@types/yauzl": "2.10.3",
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vitest": "5.0.2"
+  },
+  "build": {
+    "appId": "dev.agentpup.desktop",
+    "productName": "AgentPup",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "win": {
+      "icon": "apps/desktop/renderer/assets/tray-icon.png",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "files": [
+      "dist/**/*",
+      "THIRD_PARTY_NOTICES.md",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/collector.cjs",
+        "to": "runtime/collector.cjs"
+      },
+      {
+        "from": "dist/hook.cjs",
+        "to": "runtime/hook.cjs"
+      },
+      {
+        "from": "dist/integration.cjs",
+        "to": "runtime/integration.cjs"
+      }
+    ]
+  },
+  "dependencies": {
+    "yauzl": "3.3.0"
+  }
+}

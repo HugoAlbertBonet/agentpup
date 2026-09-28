@@ -1,0 +1,874 @@
+import path from "node:path";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import os from "node:os";
+import { spawn, spawnSync } from "node:child_process";
+
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeImage,
+  protocol,
+  screen,
+  shell,
+  Tray,
+  type Display
+} from "electron";
+
+import {
+  applyEvent,
+  createDemoEvents,
+  createStatusState,
+  replayEvents,
+  type StatusEvent,
+  type StatusState
+} from "../../../packages/status/src/index.js";
+import {
+  discoverLocalSessions,
+  discoveredSessionsToEvents
+} from "../../../packages/collectors/src/local-discovery.js";
+import { parseCollectorMessage } from "../../../packages/collectors/src/live-collector.js";
+import type { CollectorRuntimeDiagnostics } from "../../../packages/collectors/src/live-collector.js";
+import {
+  startCollectorBridge,
+  type CollectorBridge
+} from "./collector-bridge.js";
+import {
+  getCornerPosition,
+  getNextCorner,
+  getOverlayWindowPolicy,
+  selectDisplayForWindow,
+  type OverlayCorner,
+  type OverlayRuntime
+} from "./window-policy.js";
+import {
+  advanceMotion,
+  chooseEdgeTarget,
+  clampToWorkArea,
+  isRoamingEnabled
+} from "./motion.js";
+import {
+  builtInPetId,
+  defaultPetPreferences,
+  installOpenPetsZip,
+  listInstalledPets,
+  normalizePetPreferences,
+  openPetsGalleryUrl,
+  validatePetPreferencesPatch,
+  type InstalledPet,
+  type OpenPetsLayout,
+  type PetPreferences
+} from "../../../packages/pets/src/index.js";
+import {
+  createDiagnosticsSnapshot,
+  formatDiagnosticsReport,
+  type CollectorConnectionState,
+  type DiagnosticsSnapshot,
+  type SanitizedEventReference
+} from "./diagnostics.js";
+import {
+  parseIntegrationStatus,
+  type IntegrationActionResult,
+  type IntegrationStatus
+} from "./integration-control.js";
+import {
+  createScriptLaunch,
+  runtimeAssetPath,
+  wslPathConversionLaunch
+} from "./runtime-launch.js";
+import { toggleTrayOverlay, trayPresentation } from "./tray-control.js";
+import { createLoginItemSettings, resolveWslDistro } from "./login-item.js";
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "agentpup-pet",
+    privileges: { standard: true, secure: true, supportFetchAPI: false, corsEnabled: false }
+  }
+]);
+
+const WINDOW_WIDTH = 460;
+const WINDOW_HEIGHT = 680;
+const WINDOW_MARGIN = 16;
+const runtime: OverlayRuntime =
+  process.platform === "linux" &&
+  (process.env.WSL_DISTRO_NAME !== undefined || process.env.WSL_INTEROP !== undefined)
+    ? "wslg"
+    : "native";
+const roamingEnabled = isRoamingEnabled(process.argv);
+const configuredWslDistro = resolveWslDistro(
+  process.argv,
+  process.env.AGENTPUP_WSL_DISTRO ?? process.env.CLAUDEPET_WSL_DISTRO
+);
+let currentCorner: OverlayCorner = runtime === "wslg" ? "top-right" : "bottom-right";
+let currentDisplayId: number | undefined;
+
+let overlay: BrowserWindow | null = null;
+let tray: Tray | null = null;
+let status: StatusState = createStatusState();
+const eventSnapshots = new Map<string, StatusEvent[]>();
+let collectorBridge: CollectorBridge | null = null;
+let collectorState: CollectorConnectionState = process.argv.includes("--demo") ? "demo" : "waiting";
+let collectorDiagnostics: CollectorRuntimeDiagnostics | null = null;
+let lastCollectorEvent: SanitizedEventReference | null = null;
+let quitting = false;
+let interactionActive = false;
+let panelOpen = false;
+let roamingTarget: { x: number; y: number } | null = null;
+let nextRoamingChoiceAt = 0;
+let lastMotionAt = Date.now();
+let roamingTimer: NodeJS.Timeout | null = null;
+let installedPets: readonly InstalledPet[] = [];
+let selectedPetId = builtInPetId;
+let petPreferences: PetPreferences = defaultPetPreferences;
+let petSettingsWriteQueue: Promise<void> = Promise.resolve();
+
+interface PetPresentation {
+  readonly id: string;
+  readonly displayName: string;
+  readonly description: string;
+  readonly imageUrl: string;
+  readonly layout: OpenPetsLayout;
+}
+
+interface PetImportResult {
+  readonly cancelled: boolean;
+  readonly pet?: PetPresentation;
+  readonly error?: string;
+}
+
+const builtInLayout: OpenPetsLayout = {
+  version: 2,
+  frameWidth: 192,
+  frameHeight: 208,
+  columns: 8,
+  rows: 11
+};
+
+function petsRoot(): string {
+  return path.join(app.getPath("userData"), "pets");
+}
+
+function petSettingsPath(): string {
+  return path.join(app.getPath("userData"), "selected-pet.json");
+}
+
+function currentPet(): PetPresentation {
+  const installed = installedPets.find((pet) => pet.id === selectedPetId);
+  if (installed === undefined) {
+    return {
+      id: builtInPetId,
+      displayName: "Hoodie Cat",
+      description: "The bundled OpenPets companion.",
+      imageUrl: "assets/default-pet-spritesheet.webp",
+      layout: builtInLayout
+    };
+  }
+  return {
+    id: installed.id,
+    displayName: installed.displayName,
+    description: installed.description,
+    imageUrl: `agentpup-pet://spritesheet/${encodeURIComponent(installed.id)}`,
+    layout: installed.layout
+  };
+}
+
+async function refreshPetLibrary(): Promise<void> {
+  installedPets = await listInstalledPets(petsRoot());
+  try {
+    const settings = JSON.parse(await readFile(petSettingsPath(), "utf8")) as unknown;
+    petPreferences = normalizePetPreferences(settings);
+    if (
+      typeof settings === "object" &&
+      settings !== null &&
+      "selectedPetId" in settings &&
+      typeof settings.selectedPetId === "string" &&
+      (settings.selectedPetId === builtInPetId ||
+        installedPets.some((pet) => pet.id === settings.selectedPetId))
+    ) {
+      selectedPetId = settings.selectedPetId;
+    }
+  } catch (error) {
+    petPreferences = defaultPetPreferences;
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) {
+      console.warn("[agentpup] Could not read selected pet preference:", error);
+    }
+  }
+}
+
+async function persistPetSettings(): Promise<void> {
+  const settingsPath = petSettingsPath();
+  const serialized = `${JSON.stringify({ selectedPetId, ...petPreferences }, null, 2)}\n`;
+  petSettingsWriteQueue = petSettingsWriteQueue.catch(() => undefined).then(async () => {
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    const temporaryPath = `${settingsPath}.${process.pid}.tmp`;
+    await writeFile(temporaryPath, serialized, {
+      encoding: "utf8",
+      mode: 0o600
+    });
+    await rename(temporaryPath, settingsPath);
+  });
+  await petSettingsWriteQueue;
+}
+
+async function chooseNextPet(): Promise<PetPresentation> {
+  const ids = [builtInPetId, ...installedPets.map((pet) => pet.id)];
+  const currentIndex = Math.max(0, ids.indexOf(selectedPetId));
+  selectedPetId = ids[(currentIndex + 1) % ids.length]!;
+  await persistPetSettings();
+  const pet = currentPet();
+  overlay?.webContents.send("pet:changed", pet);
+  return pet;
+}
+
+function registerPetProtocol(): void {
+  protocol.handle("agentpup-pet", async (request) => {
+    const url = new URL(request.url);
+    if (url.hostname !== "spritesheet" || url.search !== "" || url.hash !== "") {
+      return new Response("Not found", { status: 404 });
+    }
+    const id = decodeURIComponent(url.pathname.slice(1));
+    const pet = installedPets.find((candidate) => candidate.id === id);
+    if (pet === undefined) return new Response("Not found", { status: 404 });
+    try {
+      return new Response(await readFile(pet.spritesheetPath), {
+        headers: {
+          "Content-Type": "image/webp",
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'"
+        }
+      });
+    } catch {
+      return new Response("Not found", { status: 404 });
+    }
+  });
+}
+
+function publishStatus(): void {
+  status = replayEvents([...eventSnapshots.values()].flat());
+  if (overlay !== null && !overlay.isDestroyed()) {
+    overlay.webContents.send("status:changed", status);
+  }
+}
+
+function diagnosticsSnapshot(): DiagnosticsSnapshot {
+  return createDiagnosticsSnapshot({
+    generatedAt: new Date().toISOString(),
+    applicationVersion: app.getVersion(),
+    electronVersion: process.versions.electron ?? "unknown",
+    platform: process.platform,
+    runtime,
+    collectorState,
+    collector: collectorDiagnostics,
+    lastEvent: lastCollectorEvent,
+    status
+  });
+}
+
+function replaceEventSnapshot(source: string, events: StatusEvent[]): void {
+  eventSnapshots.set(source, events);
+  publishStatus();
+}
+
+function markSnapshotDisconnected(source: string, reason: string): void {
+  const events = eventSnapshots.get(source);
+  if (events === undefined) return;
+  let snapshotState = replayEvents(events);
+  const observedAt = new Date().toISOString();
+  for (const collector of Object.values(snapshotState.collectors)) {
+    snapshotState = applyEvent(snapshotState, {
+      type: "collector.disconnected",
+      eventId: `${collector.collectorId}:bridge-disconnected:${observedAt}`,
+      collectorId: collector.collectorId,
+      sequence: (snapshotState.lastSequenceByCollector[collector.collectorId] ?? 0) + 1,
+      observedAt,
+      reason
+    });
+  }
+  eventSnapshots.set(source, [
+    ...events,
+    ...Object.values(snapshotState.collectors)
+      .filter((collector) => !collector.connected)
+      .map((collector) => ({
+        type: "collector.disconnected" as const,
+        eventId: `${collector.collectorId}:bridge-disconnected:${observedAt}`,
+        collectorId: collector.collectorId,
+        sequence: snapshotState.lastSequenceByCollector[collector.collectorId]!,
+        observedAt,
+        reason
+      }))
+  ]);
+  publishStatus();
+}
+
+function bundledRuntimePath(name: string): string {
+  return runtimeAssetPath(
+    {
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+      moduleDirectory: __dirname
+    },
+    name
+  );
+}
+
+function resolveWslRuntimePath(name: string, override: string | undefined): string | null {
+  if (override !== undefined && override.length > 0) return override;
+  const conversion = wslPathConversionLaunch(
+    bundledRuntimePath(name),
+    configuredWslDistro
+  );
+  const result = spawnSync(conversion.executable, conversion.arguments, {
+    encoding: "utf8",
+    timeout: 5_000,
+    windowsHide: true
+  });
+  if (result.error !== undefined || result.status !== 0) return null;
+  const converted = result.stdout.trim();
+  return converted.length > 0 ? converted : null;
+}
+
+function runtimeScriptPath(name: string, override: string | undefined): string | null {
+  return process.platform === "win32"
+    ? resolveWslRuntimePath(name, override)
+    : bundledRuntimePath(name);
+}
+
+function executeIntegrationCommand(command: "status" | "setup" | "uninstall"): Promise<string> {
+  const scriptPath = runtimeScriptPath(
+    "integration.cjs",
+    process.env.AGENTPUP_WSL_INTEGRATION_PATH ?? process.env.CLAUDEPET_WSL_INTEGRATION_PATH
+  );
+  if (scriptPath === null) {
+    return Promise.reject(new Error("The WSL integration runtime is unavailable."));
+  }
+  const launch = createScriptLaunch(
+    process.platform,
+    process.execPath,
+    scriptPath,
+    configuredWslDistro,
+    [command]
+  );
+  return new Promise((resolve, reject) => {
+    const child = spawn(launch.executable, launch.arguments, {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const finish = (error?: Error): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (error !== undefined) reject(error);
+      else resolve(stdout);
+    };
+    const append = (current: string, chunk: string): string =>
+      (current + chunk).slice(-64 * 1024);
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      stdout = append(stdout, chunk);
+    });
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr = append(stderr, chunk);
+    });
+    child.once("error", (error) => finish(error));
+    child.once("close", (code) => {
+      if (code === 0) finish();
+      else finish(new Error(stderr.trim() || `Integration command exited with code ${code}`));
+    });
+    const timeout = setTimeout(() => {
+      child.kill();
+      finish(new Error("Integration command timed out."));
+    }, 30_000);
+  });
+}
+
+async function integrationStatus(): Promise<IntegrationStatus> {
+  const parsed = parseIntegrationStatus(await executeIntegrationCommand("status"));
+  if (parsed === null) throw new Error("The integration runtime returned invalid status data.");
+  return parsed;
+}
+
+async function changeIntegration(
+  command: "setup" | "uninstall"
+): Promise<IntegrationActionResult> {
+  await executeIntegrationCommand(command);
+  return {
+    message:
+      command === "setup"
+        ? "Monitoring hooks installed. Review and trust the AgentPup hook in Codex /hooks."
+        : "AgentPup monitoring hooks removed.",
+    status: await integrationStatus()
+  };
+}
+
+function startLiveCollector(): void {
+  if (process.argv.includes("--demo")) return;
+  const source = "wsl-live";
+  const collectorPath = runtimeScriptPath(
+    "collector.cjs",
+    process.env.AGENTPUP_WSL_COLLECTOR_PATH ?? process.env.CLAUDEPET_WSL_COLLECTOR_PATH
+  );
+  if (collectorPath === null || collectorPath.length === 0) {
+    collectorState = "unavailable";
+    console.error("[agentpup] WSL collector path is unavailable; using discovery only.");
+    return;
+  }
+  let disconnected = false;
+  collectorBridge = startCollectorBridge({
+    platform: process.platform,
+    collectorPath,
+    ...(configuredWslDistro === undefined
+      ? {}
+      : { wslDistro: configuredWslDistro }),
+    onLine(line) {
+      const message = parseCollectorMessage(line);
+      if (message === null) {
+        console.error("[agentpup] Ignored an invalid collector message.");
+        return false;
+      }
+      collectorState = "connected";
+      collectorDiagnostics = message.diagnostics ?? collectorDiagnostics;
+      const latestEvent = message.events
+        .filter((event) => event.type !== "collector.connected" && event.type !== "collector.disconnected")
+        .sort((left, right) => right.observedAt.localeCompare(left.observedAt))[0];
+      if (latestEvent !== undefined) {
+        lastCollectorEvent = { type: latestEvent.type, observedAt: latestEvent.observedAt };
+      }
+      disconnected = false;
+      replaceEventSnapshot(source, message.events);
+      return true;
+    },
+    onDisconnect(reason, retryDelayMs) {
+      if (quitting) return;
+      collectorState = "disconnected";
+      if (!disconnected) {
+        disconnected = true;
+        markSnapshotDisconnected(source, reason);
+      }
+      console.warn(
+        `[agentpup] Collector disconnected (${reason}); retrying in ${retryDelayMs}ms.`
+      );
+    }
+  });
+}
+
+function displayForWindow(window: BrowserWindow): Display {
+  const displays = screen.getAllDisplays();
+  const selected = selectDisplayForWindow(
+    displays,
+    window.getBounds(),
+    currentDisplayId
+  );
+  return displays.find((display) => display.id === selected?.id) ?? screen.getPrimaryDisplay();
+}
+
+function placeOverlay(window: BrowserWindow, display: Display): void {
+  const bounds = window.getBounds();
+  const position = getCornerPosition(
+    display.workArea,
+    { width: bounds.width, height: bounds.height },
+    currentCorner,
+    WINDOW_MARGIN
+  );
+  currentDisplayId = display.id;
+  roamingTarget = null;
+  window.setPosition(position.x, position.y, false);
+}
+
+function ensureTopmost(window: BrowserWindow): void {
+  if (window.isDestroyed()) return;
+  if (process.platform === "win32") window.setAlwaysOnTop(true, "screen-saver");
+  else window.setAlwaysOnTop(true);
+  window.moveTop();
+}
+
+function overlayVisible(): boolean {
+  return overlay !== null && !overlay.isDestroyed() && overlay.isVisible();
+}
+
+function updateTrayPresentation(): void {
+  if (tray === null || tray.isDestroyed()) return;
+  const presentation = trayPresentation(overlayVisible());
+  tray.setToolTip(presentation.tooltip);
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      {
+        label: presentation.toggleLabel,
+        click: () => togglePetFromTray()
+      },
+      { type: "separator" },
+      {
+        label: "Quit AgentPup",
+        click: () => app.quit()
+      }
+    ])
+  );
+}
+
+function togglePetFromTray(): void {
+  const result = toggleTrayOverlay(overlay);
+  if (result === "shown" && overlay !== null) ensureTopmost(overlay);
+  updateTrayPresentation();
+}
+
+function createWindowsTray(): void {
+  if (process.platform !== "win32") return;
+  const icon = nativeImage
+    .createFromPath(path.join(__dirname, "renderer", "assets", "tray-icon.png"))
+    .resize({ width: 32, height: 32, quality: "best" });
+  if (icon.isEmpty()) {
+    console.error("[agentpup] Tray icon could not be loaded.");
+    return;
+  }
+  tray = new Tray(icon);
+  tray.on("click", togglePetFromTray);
+  updateTrayPresentation();
+}
+
+function startRoaming(window: BrowserWindow): void {
+  if (roamingTimer !== null) clearInterval(roamingTimer);
+  lastMotionAt = Date.now();
+  nextRoamingChoiceAt = lastMotionAt + 1_000;
+  roamingTimer = setInterval(() => {
+    if (window.isDestroyed()) return;
+    const now = Date.now();
+    const elapsedSeconds = Math.min(0.1, (now - lastMotionAt) / 1_000);
+    lastMotionAt = now;
+    if (!petPreferences.petEnabled || interactionActive || panelOpen || now < nextRoamingChoiceAt) {
+      return;
+    }
+
+    const currentPosition = window.getPosition();
+    const current = { x: currentPosition[0]!, y: currentPosition[1]! };
+    if (roamingTarget === null) {
+      const display = displayForWindow(window);
+      roamingTarget = chooseEdgeTarget(
+        display.workArea,
+        { width: WINDOW_WIDTH, height: WINDOW_HEIGHT },
+        WINDOW_MARGIN,
+        Math.random(),
+        Math.random()
+      );
+    }
+
+    const next = advanceMotion(current, roamingTarget, 72 * elapsedSeconds);
+    const bounded = clampToWorkArea(
+      next,
+      displayForWindow(window).workArea,
+      { width: WINDOW_WIDTH, height: WINDOW_HEIGHT },
+      WINDOW_MARGIN
+    );
+    window.setPosition(bounded.x, bounded.y, false);
+    if (Math.hypot(next.x - roamingTarget.x, next.y - roamingTarget.y) < 1) {
+      roamingTarget = null;
+      nextRoamingChoiceAt = now + 4_000 + Math.random() * 5_000;
+    }
+  }, 33);
+}
+
+function createOverlay(): BrowserWindow {
+  const windowPolicy = getOverlayWindowPolicy(runtime);
+  const window = new BrowserWindow({
+    width: WINDOW_WIDTH,
+    height: WINDOW_HEIGHT,
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
+    hasShadow: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    focusable: windowPolicy.focusable,
+    alwaysOnTop: true,
+    skipTaskbar: windowPolicy.skipTaskbar,
+    ...(windowPolicy.windowType === undefined ? {} : { type: windowPolicy.windowType }),
+    webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true
+    }
+  });
+
+  placeOverlay(window, screen.getPrimaryDisplay());
+  if (runtime === "native") window.setIgnoreMouseEvents(true, { forward: true });
+  else window.setIgnoreMouseEvents(false);
+  window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  window.webContents.on("will-navigate", (navigationEvent) => navigationEvent.preventDefault());
+  window.webContents.on("did-fail-load", (_event, code, description) => {
+    console.error(`[agentpup] Renderer load failed (${code}): ${description}`);
+  });
+  void window.loadFile(path.join(__dirname, "renderer", "index.html"));
+  window.once("ready-to-show", () => {
+    window.showInactive();
+    window.setHasShadow(false);
+    ensureTopmost(window);
+    updateTrayPresentation();
+    if (roamingEnabled) startRoaming(window);
+
+    if (process.argv.includes("--capture-diagnostics")) {
+      void window.webContents.executeJavaScript(
+        'document.getElementById("pet-toggle")?.click(); document.getElementById("settings-open")?.click(); document.getElementById("diagnostics-open")?.click();'
+      );
+    } else if (process.argv.includes("--capture-settings")) {
+      void window.webContents.executeJavaScript(
+        'document.getElementById("pet-toggle")?.click(); document.getElementById("settings-open")?.click();'
+      );
+    }
+
+    if (runtime === "wslg") {
+      console.info("[agentpup] WSLg preview shown at the top-right of the desktop.");
+    }
+
+    const captureArgument = process.argv.find((argument) => argument.startsWith("--capture="));
+    const capturePath = captureArgument?.slice("--capture=".length);
+    if (capturePath !== undefined && capturePath.length > 0) {
+      const captureDelayArgument = process.argv.find((argument) =>
+        argument.startsWith("--capture-delay=")
+      );
+      const requestedDelay = Number(captureDelayArgument?.slice("--capture-delay=".length));
+      const captureDelay =
+        Number.isFinite(requestedDelay) && requestedDelay >= 100 && requestedDelay <= 10_000
+          ? requestedDelay
+          : 500;
+      setTimeout(() => {
+        void window.webContents
+          .capturePage()
+          .then((image) => writeFile(capturePath, image.toPNG()))
+          .then(() => console.info(`[agentpup] Captured overlay to ${capturePath}`))
+          .catch((error: unknown) => console.error("[agentpup] Capture failed", error));
+      }, captureDelay);
+    }
+  });
+  window.on("blur", () => ensureTopmost(window));
+  window.on("always-on-top-changed", (_event, isAlwaysOnTop) => {
+    if (!isAlwaysOnTop) setTimeout(() => ensureTopmost(window), 0);
+  });
+  window.on("closed", () => {
+    if (roamingTimer !== null) {
+      clearInterval(roamingTimer);
+      roamingTimer = null;
+    }
+    if (overlay === window) overlay = null;
+  });
+
+  return window;
+}
+
+function registerIpc(): void {
+  ipcMain.handle("status:get", (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted status request");
+    return status;
+  });
+
+  ipcMain.handle("diagnostics:get", (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted diagnostics request");
+    return diagnosticsSnapshot();
+  });
+
+  ipcMain.handle("diagnostics:copy", (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted diagnostics request");
+    clipboard.writeText(formatDiagnosticsReport(diagnosticsSnapshot()));
+  });
+
+  ipcMain.handle("integration:get-status", async (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted integration request");
+    return await integrationStatus();
+  });
+
+  ipcMain.handle("integration:setup", async (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted integration request");
+    return await changeIntegration("setup");
+  });
+
+  ipcMain.handle("integration:uninstall", async (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted integration request");
+    return await changeIntegration("uninstall");
+  });
+
+  ipcMain.handle("overlay:get-corner", (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted corner request");
+    return currentCorner;
+  });
+
+  ipcMain.handle("overlay:move-next-corner", (event) => {
+    if (event.sender !== overlay?.webContents || overlay === null) {
+      throw new Error("Untrusted corner move request");
+    }
+    const bounds = overlay.getBounds();
+    const display = screen.getDisplayNearestPoint({
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2
+    });
+    currentCorner = getNextCorner(currentCorner);
+    placeOverlay(overlay, display);
+    ensureTopmost(overlay);
+    return currentCorner;
+  });
+
+  ipcMain.handle("pet:get-current", (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted pet request");
+    return currentPet();
+  });
+
+  ipcMain.handle("pet:get-preferences", (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted pet request");
+    return petPreferences;
+  });
+
+  ipcMain.handle("pet:update-preferences", async (event, value: unknown) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted pet request");
+    const patch = validatePetPreferencesPatch(value);
+    petPreferences = { ...petPreferences, ...patch };
+    await persistPetSettings();
+    overlay?.webContents.send("pet:preferences-changed", petPreferences);
+    return petPreferences;
+  });
+
+  ipcMain.handle("pet:cycle", async (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted pet request");
+    return await chooseNextPet();
+  });
+
+  ipcMain.handle("pet:open-gallery", async (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted pet request");
+    await shell.openExternal(openPetsGalleryUrl);
+  });
+
+  ipcMain.handle("pet:import", async (event): Promise<PetImportResult> => {
+    if (event.sender !== overlay?.webContents || overlay === null) {
+      throw new Error("Untrusted pet request");
+    }
+    const selection = await dialog.showOpenDialog(overlay, {
+      title: "Import an OpenPets pet",
+      buttonLabel: "Import pet",
+      properties: ["openFile"],
+      filters: [{ name: "OpenPets pack", extensions: ["zip"] }]
+    });
+    const zipPath = selection.filePaths[0];
+    if (selection.canceled || zipPath === undefined) return { cancelled: true };
+    try {
+      const installed = await installOpenPetsZip(zipPath, petsRoot());
+      installedPets = await listInstalledPets(petsRoot());
+      selectedPetId = installed.id;
+      await persistPetSettings();
+      const pet = currentPet();
+      overlay.webContents.send("pet:changed", pet);
+      return { cancelled: false, pet };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Pet import failed.";
+      console.error("[agentpup] Pet import failed:", error);
+      return { cancelled: false, error: message };
+    }
+  });
+
+  ipcMain.on("overlay:set-interactive", (event, interactive: unknown) => {
+    if (event.sender !== overlay?.webContents || typeof interactive !== "boolean") return;
+    interactionActive = interactive;
+    if (runtime === "native") {
+      overlay.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true });
+    }
+  });
+
+  ipcMain.on("overlay:set-panel-open", (event, open: unknown) => {
+    if (event.sender !== overlay?.webContents || typeof open !== "boolean") return;
+    panelOpen = open;
+  });
+}
+
+async function loadInitialEvents(): Promise<StatusEvent[]> {
+  if (process.argv.includes("--demo")) return createDemoEvents();
+
+  const userHome = os.homedir();
+  const sessions = await discoverLocalSessions({
+    codexHome: process.env.CODEX_HOME ?? path.join(userHome, ".codex"),
+    claudeHome: process.env.CLAUDE_CONFIG_DIR ?? path.join(userHome, ".claude"),
+    limitPerProvider: 12
+  });
+  return discoveredSessionsToEvents(sessions);
+}
+
+const hasLock = app.requestSingleInstanceLock();
+if (!hasLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    overlay?.showInactive();
+    if (overlay !== null) ensureTopmost(overlay);
+    updateTrayPresentation();
+  });
+  app.whenReady().then(async () => {
+    if (process.platform === "win32") app.setAppUserModelId("dev.agentpup.desktop");
+    const requestedAutostart = process.argv.includes("--enable-autostart")
+      ? true
+      : process.argv.includes("--disable-autostart")
+        ? false
+        : undefined;
+    if (requestedAutostart !== undefined) {
+      const loginItem = createLoginItemSettings({
+        platform: process.platform,
+        enabled: requestedAutostart,
+        isPackaged: app.isPackaged,
+        executablePath: process.execPath,
+        applicationPath: path.resolve(__dirname, ".."),
+        wslDistro: configuredWslDistro
+      });
+      if (loginItem !== null) {
+        app.setLoginItemSettings(loginItem);
+        console.info(
+          `[agentpup] Windows autostart ${requestedAutostart ? "enabled" : "disabled"}.`
+        );
+      }
+    }
+    await refreshPetLibrary();
+    registerPetProtocol();
+    eventSnapshots.set("initial", await loadInitialEvents());
+    publishStatus();
+    registerIpc();
+    overlay = createOverlay();
+    createWindowsTray();
+    startLiveCollector();
+
+    screen.on("display-metrics-changed", (_event, display) => {
+      if (
+        overlay === null ||
+        overlay.isDestroyed() ||
+        (currentDisplayId !== undefined && currentDisplayId !== display.id)
+      ) {
+        return;
+      }
+      placeOverlay(overlay, display);
+      ensureTopmost(overlay);
+    });
+    screen.on("display-removed", (_event, removedDisplay) => {
+      if (
+        overlay === null ||
+        overlay.isDestroyed() ||
+        (currentDisplayId !== undefined && currentDisplayId !== removedDisplay.id)
+      ) {
+        return;
+      }
+      currentDisplayId = undefined;
+      placeOverlay(overlay, displayForWindow(overlay));
+      ensureTopmost(overlay);
+    });
+  });
+}
+
+app.on("before-quit", () => {
+  quitting = true;
+  tray?.destroy();
+  tray = null;
+  collectorBridge?.stop();
+  collectorBridge = null;
+});
+app.on("window-all-closed", () => app.quit());

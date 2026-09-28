@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: agentpup-pet:; connect-src 'none'; object-src 'none'; base-uri 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgentPup</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="pet-shell" class="pet-shell" data-state="idle" data-corner="bottom-right">
+      <section id="agent-panel" class="agent-panel interactive" aria-label="Agent activity" hidden>
+        <h1 id="panel-title">No monitored agents</h1>
+        <button id="settings-open" class="settings-open" type="button" aria-label="Open pet settings" title="Pet settings">⚙</button>
+        <button id="panel-close" class="panel-close" type="button" aria-label="Close agent activity">×</button>
+        <section id="activity-view" class="panel-view" aria-label="Agent activity log">
+          <ul id="agent-list"></ul>
+          <div class="activity-footer">
+            <p class="panel-note">Respond in the original coding session</p>
+            <button id="agent-clear" class="agent-clear" type="button" hidden>Clear inactive</button>
+          </div>
+        </section>
+        <section id="settings-view" class="panel-view settings-view" aria-label="Pet settings" hidden>
+          <button id="settings-back" class="settings-back" type="button">← Agent activity</button>
+          <label class="setting-row" for="pet-enabled">
+            <span><strong>Show pet</strong><small>Keep the character on screen</small></span>
+            <input id="pet-enabled" type="checkbox" />
+          </label>
+          <label class="setting-slider" for="pet-size">
+            <span><strong>Pet size</strong><output id="pet-size-value" for="pet-size">67%</output></span>
+            <input id="pet-size" type="range" min="0.35" max="1" step="0.01" value="0.67" />
+          </label>
+          <label class="setting-row" for="pet-animations">
+            <span><strong>Animations</strong><small>Animate status reactions and idle poses</small></span>
+            <input id="pet-animations" type="checkbox" />
+          </label>
+          <div class="status-settings" aria-label="Status bar appearance">
+            <span class="setting-section-label status-settings-title">Status bar</span>
+            <label class="compact-slider" for="status-size">
+              <span>Size <output id="status-size-value" for="status-size">100%</output></span>
+              <input id="status-size" type="range" min="0.75" max="1.5" step="0.05" value="1" />
+            </label>
+            <label class="compact-slider" for="status-font-size">
+              <span>Font <output id="status-font-size-value" for="status-font-size">13px</output></span>
+              <input id="status-font-size" type="range" min="10" max="20" step="1" value="13" />
+            </label>
+            <label class="compact-slider" for="status-line-gap">
+              <span>Spacing <output id="status-line-gap-value" for="status-line-gap">9px</output></span>
+              <input id="status-line-gap" type="range" min="2" max="18" step="1" value="9" />
+            </label>
+          </div>
+          <div class="pet-library" aria-label="Pet design">
+            <span class="setting-section-label">Pet design</span>
+            <span id="pet-name" class="pet-name">Hoodie Cat</span>
+            <div class="pet-actions">
+              <button id="pet-cycle" class="panel-action" type="button" title="Use the next installed pet">Next pet</button>
+              <button id="pet-gallery" class="panel-action" type="button">Gallery ↗</button>
+              <button id="pet-import" class="panel-action primary-action" type="button">Import .zip</button>
+            </div>
+            <span id="pet-message" class="pet-message" role="status"></span>
+          </div>
+          <button id="integrations-open" class="diagnostics-open" type="button">
+            <span><strong>Agent integrations</strong><small>Install, repair, or remove local monitoring hooks</small></span>
+            <span aria-hidden="true">›</span>
+          </button>
+          <button id="diagnostics-open" class="diagnostics-open" type="button">
+            <span><strong>Diagnostics</strong><small>Collector, hooks, versions, and event delivery</small></span>
+            <span aria-hidden="true">›</span>
+          </button>
+        </section>
+        <section id="diagnostics-view" class="panel-view diagnostics-view" aria-label="Diagnostics" hidden>
+          <button id="diagnostics-back" class="settings-back" type="button">← Pet settings</button>
+          <dl class="diagnostics-list">
+            <div><dt>Collector</dt><dd id="diagnostics-collector">Loading…</dd></div>
+            <div><dt>Last snapshot</dt><dd id="diagnostics-last-snapshot">—</dd></div>
+            <div><dt>Codex</dt><dd id="diagnostics-codex">—</dd></div>
+            <div><dt>Claude Code</dt><dd id="diagnostics-claude">—</dd></div>
+            <div><dt>Last event</dt><dd id="diagnostics-last-event">—</dd></div>
+          </dl>
+          <button id="diagnostics-copy" class="panel-action primary-action diagnostics-copy" type="button">Copy diagnostic report</button>
+          <span id="diagnostics-message" class="pet-message" role="status"></span>
+          <p class="diagnostics-note">Contains versions, connection state, counts, and event types. It excludes prompts, tools, projects, sessions, and file paths.</p>
+        </section>
+        <section id="integrations-view" class="panel-view integrations-view" aria-label="Agent integrations" hidden>
+          <button id="integrations-back" class="settings-back" type="button">← Pet settings</button>
+          <p class="integration-intro">AgentPup observes local lifecycle events. It never approves requests, changes prompts, or uses model tokens.</p>
+          <dl class="diagnostics-list">
+            <div><dt>Environment</dt><dd id="integration-environment">Checking…</dd></div>
+            <div><dt>Codex</dt><dd id="integration-codex">Checking…</dd></div>
+            <div><dt>Claude Code</dt><dd id="integration-claude">Checking…</dd></div>
+          </dl>
+          <div class="integration-actions">
+            <button id="integration-install" class="panel-action primary-action" type="button">Install or repair</button>
+            <button id="integration-uninstall" class="panel-action" type="button">Uninstall hooks</button>
+          </div>
+          <span id="integration-message" class="pet-message" role="status"></span>
+          <p class="diagnostics-note">Existing provider settings are backed up and preserved. After installation, open <strong>/hooks</strong> in Codex and trust the AgentPup user hook.</p>
+        </section>
+      </section>
+
+      <button
+        id="pet-toggle"
+        class="pet-toggle interactive"
+        type="button"
+        aria-expanded="false"
+        aria-controls="agent-panel"
+        aria-label="Show monitored agents"
+      >
+        <span id="pet-container" class="pet" aria-hidden="true">
+          <span id="pet-sprite" class="pet-sprite"></span>
+        </span>
+      </button>
+      <div id="status-controls" class="status-controls interactive">
+        <button
+          id="status-toggle"
+          class="status-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="agent-panel"
+          aria-label="Show monitored agents"
+        >
+          <span class="badge" aria-live="polite">
+          <span class="metrics">
+            <span id="working-metric" class="metric" title="Working"><span class="status-dot working-dot"></span><strong id="working-count">0</strong></span>
+            <span id="needs-metric" class="metric" title="Needs you"><span class="status-dot needs-dot"></span><strong id="needs-count">0</strong></span>
+            <span id="ready-metric" class="metric" title="Ready"><span class="status-dot ready-dot"></span><strong id="ready-count">0</strong></span>
+          </span>
+          </span>
+        </button>
+        <button
+          id="corner-move"
+          class="corner-move"
+          type="button"
+          aria-label="Move pet to the next corner"
+          title="Move to next corner"
+        >↻</button>
+      </div>
+    </main>
+    <script type="module" src="renderer.js"></script>
+  </body>
+</html>
