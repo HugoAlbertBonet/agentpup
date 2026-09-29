@@ -46,6 +46,33 @@ describe("Windows login item", () => {
         wslDistro: undefined
       })
     ).toEqual({ openAtLogin: true });
+    expect(
+      createLoginItemSettings({
+        platform: "darwin",
+        enabled: false,
+        isPackaged: true,
+        executablePath: "/Applications/AgentPup.app/Contents/MacOS/AgentPup",
+        applicationPath: "ignored",
+        wslDistro: undefined
+      })
+    ).toEqual({ openAtLogin: false });
+  });
+
+  it("can remove the Windows login item with the same bounded registration", () => {
+    expect(
+      createLoginItemSettings({
+        platform: "win32",
+        enabled: false,
+        isPackaged: true,
+        executablePath: "C:\\Program Files\\AgentPup\\AgentPup.exe",
+        applicationPath: "ignored",
+        wslDistro: undefined
+      })
+    ).toEqual({
+      openAtLogin: false,
+      path: "C:\\Program Files\\AgentPup\\AgentPup.exe",
+      args: []
+    });
   });
 
   it("leaves Linux startup to the freedesktop autostart adapter", () => {

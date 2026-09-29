@@ -84,8 +84,10 @@ Remove that login registration with `npm run autostart:windows:disable`. The
 launcher preserves the selected WSL distribution and can recover when WSL's
 Windows-executable binfmt registration is temporarily unavailable.
 
-The tray menu provides **Start with Windows** on Windows and **Start at login**
-on macOS and Linux. Windows and macOS use Electron's native login-item service;
+Pet settings and the tray menu provide **Start with Windows** on Windows and
+**Start at login** on macOS and Linux. Fresh installs leave it disabled. Either
+checkbox can enable or disable it later, and both stay synchronized. Windows
+and macOS use Electron's native login-item service;
 Linux uses an AgentPup-owned freedesktop entry at
 `$XDG_CONFIG_HOME/autostart/dev.agentpup.desktop` (or
 `~/.config/autostart/dev.agentpup.desktop`). On unsigned macOS development and
@@ -148,9 +150,10 @@ display backend. X11 is the current overlay target. Electron does not support
 programmatic positioning, moving, or always-on-top windows on native Wayland,
 so that mode is reported as limited rather than presented as equivalent. On a
 Wayland desktop with Xwayland installed, launch AgentPup with
-`--ozone-platform=x11` to select the current positioning path. Selective
-transparent-area click-through on Linux still requires a platform-specific
-implementation and real-desktop validation.
+`--ozone-platform=x11` to select the current positioning path. On X11/Xwayland,
+AgentPup limits its native input shape to the visible pet, status controls, and
+open activity panel so the rest of the transparent window passes clicks to the
+application below. This behavior still requires real-desktop X11 validation.
 
 Before publishing a final release, follow the
 [clean-machine Windows checklist](docs/WINDOWS_RELEASE_CHECKLIST.md).

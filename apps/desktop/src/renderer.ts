@@ -10,8 +10,8 @@ import {
   type PetVisualState
 } from "../../../packages/pets/src/animation.js";
 import type { PetPreferences, PetPreferencesPatch } from "../../../packages/pets/src/preferences.js";
-import type { ClaudepetApi, PetPresentation } from "./preload.js";
-import type { OverlayCorner } from "./window-policy.js";
+import type { ClaudepetApi, PetPresentation, StartupPreference } from "./preload.js";
+import type { OverlayCorner, Rectangle } from "./window-policy.js";
 import type { DiagnosticsSnapshot } from "./diagnostics.js";
 import {
   shouldOpenIntegrationSetup,
@@ -72,6 +72,7 @@ const agentList = byId<HTMLUListElement>("agent-list");
 const agentClear = byId<HTMLButtonElement>("agent-clear");
 const toggle = byId<HTMLButtonElement>("pet-toggle");
 const statusToggle = byId<HTMLButtonElement>("status-toggle");
+const statusControls = byId<HTMLElement>("status-controls");
 const cornerMove = byId<HTMLButtonElement>("corner-move");
 const shell = byId<HTMLElement>("pet-shell");
 const sprite = byId<HTMLElement>("pet-sprite");
@@ -85,6 +86,8 @@ const petEnabled = byId<HTMLInputElement>("pet-enabled");
 const petSize = byId<HTMLInputElement>("pet-size");
 const petSizeValue = byId<HTMLOutputElement>("pet-size-value");
 const petAnimations = byId<HTMLInputElement>("pet-animations");
+const startupEnabled = byId<HTMLInputElement>("startup-enabled");
+const startupLabel = byId<HTMLElement>("startup-label");
 const statusSize = byId<HTMLInputElement>("status-size");
 const statusSizeValue = byId<HTMLOutputElement>("status-size-value");
 const statusFontSize = byId<HTMLInputElement>("status-font-size");
@@ -108,6 +111,37 @@ let preferences: PetPreferences = {
   statusLineGap: 9,
   maxFinishedAgents: 5
 };
+
+let shapeFrame: number | null = null;
+
+function visibleRectangle(element: HTMLElement): Rectangle | null {
+  const bounds = element.getBoundingClientRect();
+  const left = Math.max(0, Math.floor(bounds.left));
+  const top = Math.max(0, Math.floor(bounds.top));
+  const right = Math.min(window.innerWidth, Math.ceil(bounds.right));
+  const bottom = Math.min(window.innerHeight, Math.ceil(bounds.bottom));
+  if (element.hidden || right <= left || bottom <= top) return null;
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+function publishWindowShape(): void {
+  shapeFrame = null;
+  const rectangles = [panel, toggle, statusControls]
+    .map(visibleRectangle)
+    .filter((rectangle): rectangle is Rectangle => rectangle !== null);
+  if (rectangles.length > 0) window.claudepet.setWindowShape(rectangles);
+}
+
+function scheduleWindowShape(): void {
+  if (shapeFrame !== null) cancelAnimationFrame(shapeFrame);
+  shapeFrame = requestAnimationFrame(publishWindowShape);
+}
+
+function renderStartupPreference(preference: StartupPreference): void {
+  startupLabel.textContent = preference.label;
+  startupEnabled.checked = preference.enabled;
+  startupEnabled.disabled = !preference.supported;
+}
 
 function applyPetAnimation(state: PetVisualState, restart = false): void {
   if (!restart && state === visualState) return;
@@ -185,6 +219,7 @@ function applyPetPreferences(next: PetPreferences, restartAnimation = false): vo
     applyPetAnimation(visualState, true);
   }
   if (currentStatus !== null) render(currentStatus);
+  scheduleWindowShape();
 }
 
 function showPanelView(view: "activity" | "settings" | "diagnostics" | "integrations"): void {
@@ -216,6 +251,7 @@ function showPanelView(view: "activity" | "settings" | "diagnostics" | "integrat
   if (view === "diagnostics") diagnosticsView.scrollTop = 0;
   if (view === "diagnostics") void refreshDiagnostics();
   if (view === "integrations") void refreshIntegrationStatus();
+  scheduleWindowShape();
 }
 
 function timestampLabel(value: string | null): string {
@@ -335,6 +371,7 @@ function savePetPreferences(patch: PetPreferencesPatch): void {
 
 function showCorner(corner: OverlayCorner): void {
   shell.dataset.corner = corner;
+  scheduleWindowShape();
 }
 
 function unresolvedRequests(agent: AgentStatus): PendingRequest[] {
@@ -486,6 +523,7 @@ function setPanelOpen(open: boolean): void {
     showPanelView("activity");
   }
   window.claudepet.setPanelOpen(open);
+  scheduleWindowShape();
 }
 
 toggle.addEventListener("click", () => {
@@ -575,6 +613,18 @@ petAnimations.addEventListener("change", () => {
   applyPetPreferences(next);
   savePetPreferences({ animationsEnabled: petAnimations.checked });
 });
+startupEnabled.addEventListener("change", () => {
+  const requested = startupEnabled.checked;
+  startupEnabled.disabled = true;
+  petMessage.textContent = "";
+  window.claudepet
+    .setStartupPreference(requested)
+    .then(renderStartupPreference)
+    .catch(() => {
+      petMessage.textContent = "Could not update automatic startup.";
+      return window.claudepet.getStartupPreference().then(renderStartupPreference);
+    });
+});
 petSize.addEventListener("input", () => {
   applyPetPreferences({ ...preferences, petScale: Number(petSize.value) });
 });
@@ -645,6 +695,22 @@ window.claudepet.getPetPreferences().then((next) => applyPetPreferences(next, tr
 window.claudepet.onPetPreferencesChanged((next) => applyPetPreferences(next));
 
 window.claudepet.getCorner().then(showCorner).catch(() => undefined);
+
+window.claudepet.getStartupPreference().then(renderStartupPreference).catch(() => {
+  startupEnabled.disabled = true;
+});
+window.claudepet.onStartupPreferenceChanged(renderStartupPreference);
+
+const shapeObserver = new ResizeObserver(scheduleWindowShape);
+shapeObserver.observe(panel);
+shapeObserver.observe(toggle);
+shapeObserver.observe(statusControls);
+new MutationObserver(scheduleWindowShape).observe(shell, {
+  attributes: true,
+  subtree: true,
+  attributeFilter: ["hidden", "style", "data-corner", "data-pet-enabled"]
+});
+scheduleWindowShape();
 
 window.claudepet
   .getIntegrationStatus()

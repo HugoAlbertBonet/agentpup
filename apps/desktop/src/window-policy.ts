@@ -20,6 +20,7 @@ export interface Size {
 export interface OverlayWindowPolicy {
   alwaysOnTopSupported: boolean;
   clickThrough: boolean;
+  shapedClickThrough: boolean;
   focusable: boolean;
   skipTaskbar: boolean;
   windowType: "notification" | undefined;
@@ -76,6 +77,7 @@ export function getOverlayWindowPolicy(runtime: OverlayRuntime): OverlayWindowPo
     return {
       alwaysOnTopSupported: true,
       clickThrough: true,
+      shapedClickThrough: false,
       focusable: false,
       skipTaskbar: true,
       windowType: undefined
@@ -85,6 +87,7 @@ export function getOverlayWindowPolicy(runtime: OverlayRuntime): OverlayWindowPo
     return {
       alwaysOnTopSupported: false,
       clickThrough: false,
+      shapedClickThrough: false,
       focusable: true,
       skipTaskbar: true,
       windowType: "notification"
@@ -93,6 +96,7 @@ export function getOverlayWindowPolicy(runtime: OverlayRuntime): OverlayWindowPo
   return {
     alwaysOnTopSupported: runtime === "linux-x11",
     clickThrough: false,
+    shapedClickThrough: runtime === "linux-x11",
     focusable: false,
     skipTaskbar: true,
     windowType: "notification"

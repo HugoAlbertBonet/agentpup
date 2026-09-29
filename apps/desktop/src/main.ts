@@ -47,6 +47,7 @@ import {
   type OverlayCorner,
   type OverlayRuntime
 } from "./window-policy.js";
+import { normalizeWindowShape } from "./window-shape.js";
 import {
   advanceMotion,
   chooseEdgeTarget,
@@ -547,6 +548,23 @@ async function readStartupEnabled(): Promise<boolean> {
   return app.getLoginItemSettings().openAtLogin;
 }
 
+function startupPreference(): { supported: boolean; label: string; enabled: boolean } {
+  const supported = supportsStartupControl(process.platform);
+  const presentation = autostartTrayPresentation(process.platform, startupEnabled);
+  return {
+    supported,
+    label: presentation.label,
+    enabled: supported && startupEnabled
+  };
+}
+
+function publishStartupPreference(): void {
+  updateTrayPresentation();
+  if (overlay !== null && !overlay.isDestroyed()) {
+    overlay.webContents.send("startup:changed", startupPreference());
+  }
+}
+
 async function setStartupEnabled(enabled: boolean): Promise<void> {
   if (process.platform === "linux") {
     const configuration = linuxAutostartConfiguration();
@@ -560,6 +578,7 @@ async function setStartupEnabled(enabled: boolean): Promise<void> {
   console.info(
     `[agentpup] ${process.platform} login startup ${startupEnabled ? "enabled" : "disabled"}.`
   );
+  publishStartupPreference();
 }
 
 function updateTrayPresentation(): void {
@@ -581,8 +600,8 @@ function updateTrayPresentation(): void {
         void setStartupEnabled(menuItem.checked)
           .catch((error: unknown) => {
             console.error("[agentpup] Could not update login startup:", error);
-          })
-          .finally(updateTrayPresentation);
+            publishStartupPreference();
+          });
       }
     });
   }
@@ -805,6 +824,19 @@ function registerIpc(): void {
     return currentCorner;
   });
 
+  ipcMain.handle("startup:get", (event) => {
+    if (event.sender !== overlay?.webContents) throw new Error("Untrusted startup request");
+    return startupPreference();
+  });
+
+  ipcMain.handle("startup:set", async (event, enabled: unknown) => {
+    if (event.sender !== overlay?.webContents || typeof enabled !== "boolean") {
+      throw new Error("Untrusted startup request");
+    }
+    await setStartupEnabled(enabled);
+    return startupPreference();
+  });
+
   ipcMain.handle("overlay:move-next-corner", (event) => {
     if (event.sender !== overlay?.webContents || overlay === null) {
       throw new Error("Untrusted corner move request");
@@ -887,6 +919,23 @@ function registerIpc(): void {
   ipcMain.on("overlay:set-panel-open", (event, open: unknown) => {
     if (event.sender !== overlay?.webContents || typeof open !== "boolean") return;
     panelOpen = open;
+  });
+
+  ipcMain.on("overlay:set-shape", (event, value: unknown) => {
+    if (event.sender !== overlay?.webContents || overlay === null) return;
+    let rectangles;
+    try {
+      rectangles = normalizeWindowShape(value, {
+        width: WINDOW_WIDTH,
+        height: WINDOW_HEIGHT
+      });
+    } catch {
+      console.warn("[agentpup] Ignored an invalid overlay window shape.");
+      return;
+    }
+    if (getOverlayWindowPolicy(runtime).shapedClickThrough) {
+      overlay.setShape(rectangles);
+    }
   });
 }
 

@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 import type { StatusState } from "../../../packages/status/src/index.js";
-import type { OverlayCorner } from "./window-policy.js";
+import type { OverlayCorner, Rectangle } from "./window-policy.js";
 import type { OpenPetsLayout } from "../../../packages/pets/src/index.js";
 import type {
   PetPreferences,
@@ -27,6 +27,12 @@ export interface PetImportResult {
   readonly error?: string;
 }
 
+export interface StartupPreference {
+  readonly supported: boolean;
+  readonly label: string;
+  readonly enabled: boolean;
+}
+
 export interface ClaudepetApi {
   getStatus(): Promise<StatusState>;
   onStatus(callback: (status: StatusState) => void): void;
@@ -45,6 +51,10 @@ export interface ClaudepetApi {
   openPetGallery(): Promise<void>;
   onPetChanged(callback: (pet: PetPresentation) => void): void;
   onPetPreferencesChanged(callback: (preferences: PetPreferences) => void): void;
+  getStartupPreference(): Promise<StartupPreference>;
+  setStartupPreference(enabled: boolean): Promise<StartupPreference>;
+  onStartupPreferenceChanged(callback: (preference: StartupPreference) => void): void;
+  setWindowShape(rectangles: readonly Rectangle[]): void;
   setInteractive(interactive: boolean): void;
   setPanelOpen(open: boolean): void;
 }
@@ -82,6 +92,16 @@ const api: ClaudepetApi = {
       (_event, preferences: PetPreferences) => callback(preferences)
     );
   },
+  getStartupPreference: () =>
+    ipcRenderer.invoke("startup:get") as Promise<StartupPreference>,
+  setStartupPreference: (enabled) =>
+    ipcRenderer.invoke("startup:set", enabled) as Promise<StartupPreference>,
+  onStartupPreferenceChanged: (callback) => {
+    ipcRenderer.on("startup:changed", (_event, preference: StartupPreference) =>
+      callback(preference)
+    );
+  },
+  setWindowShape: (rectangles) => ipcRenderer.send("overlay:set-shape", rectangles),
   setInteractive: (interactive) => ipcRenderer.send("overlay:set-interactive", interactive),
   setPanelOpen: (open) => ipcRenderer.send("overlay:set-panel-open", open)
 };

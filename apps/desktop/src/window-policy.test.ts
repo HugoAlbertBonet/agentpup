@@ -50,6 +50,7 @@ describe("overlay window policy", () => {
     expect(getOverlayWindowPolicy("native")).toEqual({
       alwaysOnTopSupported: true,
       clickThrough: true,
+      shapedClickThrough: false,
       focusable: false,
       skipTaskbar: true,
       windowType: undefined
@@ -64,6 +65,7 @@ describe("overlay window policy", () => {
     expect(getOverlayWindowPolicy("wslg")).toEqual({
       alwaysOnTopSupported: false,
       clickThrough: false,
+      shapedClickThrough: false,
       focusable: true,
       skipTaskbar: true,
       windowType: "notification"
@@ -78,6 +80,7 @@ describe("overlay window policy", () => {
     expect(getOverlayWindowPolicy("linux-x11")).toEqual({
       alwaysOnTopSupported: true,
       clickThrough: false,
+      shapedClickThrough: true,
       focusable: false,
       skipTaskbar: true,
       windowType: "notification"
@@ -88,6 +91,7 @@ describe("overlay window policy", () => {
     expect(getOverlayWindowPolicy("linux-wayland")).toEqual({
       alwaysOnTopSupported: false,
       clickThrough: false,
+      shapedClickThrough: false,
       focusable: false,
       skipTaskbar: true,
       windowType: "notification"
