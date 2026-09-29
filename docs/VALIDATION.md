@@ -120,6 +120,17 @@ lifecycle structure or aggregate counts.
   and exposed a test-only URL conversion that duplicated the drive prefix on
   native Windows. The asset reader itself was unchanged; the test now uses
   Node's cross-platform `fileURLToPath`. A corrected candidate is required.
+- Windows workflow run 36532152280 (`v0.1.0-rc.22`) passed all 160 tests on
+  native Windows, built and verified the NSIS installer, completed the clean
+  install/launch/shutdown/uninstall cycle, and uploaded
+  `AgentPup-Windows-unsigned` (113,224,715 bytes; GitHub artifact digest
+  `sha256:f9230860c492a4bcf4f22905ad57aa533370a1373c1b5ea727dd297988a45f9e`).
+- Cross-platform workflow run 36532152377 (`v0.1.0-rc.22`) passed the macOS
+  policy gate plus Linux X11 and headless Wayland policy gates, then uploaded
+  `AgentPup-macOS-unsigned` (130,772,575 bytes; GitHub artifact digest
+  `sha256:cacd06ddeeb0816684de0d09db80ff7fd17af75debc127038203ba1993509fe9`)
+  and `AgentPup-Linux-AppImage` (126,839,154 bytes; GitHub artifact digest
+  `sha256:913e50fe3334f791e6527fc254d0c60c3a174b2c66b35ee02f530665d0b81f3d`).
 
 - The public repository is connected at
   `github.com/HugoAlbertBonet/agentpup`; `main` and the release-candidate tag
