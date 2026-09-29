@@ -271,6 +271,59 @@ describe("transcript lifecycle adapters", () => {
     expect(JSON.stringify(snapshot)).not.toContain("PRIVATE_REJECTION");
   });
 
+  it("finishes a Claude turn when Auto mode stops after repeated missing safety verdicts", () => {
+    const snapshot = parseClaudeTranscript(
+      [
+        {
+          type: "user",
+          uuid: "prompt-1",
+          sessionId: "claude-session",
+          cwd: "/workspace/api",
+          timestamp: "2026-09-29T06:30:00.000Z",
+          origin: { kind: "human" },
+          message: { content: [{ type: "text", text: "PRIVATE_PROMPT" }] }
+        },
+        {
+          type: "assistant",
+          uuid: "tool-message-1",
+          sessionId: "claude-session",
+          cwd: "/workspace/api",
+          timestamp: "2026-09-29T06:31:00.000Z",
+          message: {
+            id: "message-1",
+            content: [{ type: "tool_use", id: "tool-1", name: "Bash", input: {} }]
+          }
+        },
+        {
+          type: "user",
+          uuid: "auto-mode-stop-1",
+          parentUuid: "tool-message-1",
+          sessionId: "claude-session",
+          cwd: "/workspace/api",
+          timestamp: "2026-09-29T06:36:20.000Z",
+          userType: "external",
+          toolDenialKind: "automode-unavailable",
+          toolDenialEndsTurn: true,
+          toolUseResult: "PRIVATE_AUTO_MODE_ERROR",
+          message: {
+            content: [
+              {
+                type: "tool_result",
+                tool_use_id: "tool-1",
+                is_error: true,
+                content: "PRIVATE_TOOL_RESULT"
+              }
+            ]
+          }
+        }
+      ],
+      { collectorId: "wsl:Ubuntu:claude-code", modifiedAt: now - 1_000, now }
+    );
+
+    expect(snapshot).toMatchObject({ activity: "failed", resultReady: true, requests: [] });
+    expect(JSON.stringify(snapshot)).not.toContain("PRIVATE");
+  });
+
   it("maps Claude's synthetic request interruption marker to interrupted", () => {
     const snapshot = parseClaudeTranscript(
       [

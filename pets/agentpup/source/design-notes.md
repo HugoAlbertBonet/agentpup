@@ -8,9 +8,11 @@ the pet readable at its normal desktop size.
 
 ## Status poses
 
-- **Idle:** seated, calm, and alert. The antenna and collar remain visible.
-- **Working:** a focused raised-paw pose with a gentle breathing loop.
-- **Needs you:** a direct wave and brighter posture. Motion is stronger than
+- **Idle:** lying comfortably with slow breathing, a blink, and a small ear
+  twitch. The pose reads as patient rest rather than sadness.
+- **Working:** focused laptop typing with alternating paw taps, a blink, and a
+  subtle tail movement.
+- **Needs you:** a seated paw raise and brighter posture. Motion is stronger than
   the other states so the request remains recognizable without relying on red.
 - **Ready:** a joyful hop for a finished result. The shared UI supplies the
   persistent result count after the short celebration.

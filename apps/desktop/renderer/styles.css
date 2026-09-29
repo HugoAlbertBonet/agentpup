@@ -316,6 +316,53 @@ button {
   gap: 6px;
 }
 
+.animation-preview {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.animation-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.animation-preview-card {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 5px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 4%);
+}
+
+.animation-preview-card figcaption {
+  color: #dbe5ed;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.animation-preview-frame {
+  position: relative;
+  display: block;
+  width: 92px;
+  height: 100px;
+  overflow: hidden;
+}
+
+.animation-preview-frame .pet-sprite {
+  --pet-scale: 0.48;
+}
+
+.animation-preview > small {
+  color: #9fabb9;
+  font-size: 9px;
+}
+
 .panel-action {
   min-height: 25px;
   padding: 4px 7px;

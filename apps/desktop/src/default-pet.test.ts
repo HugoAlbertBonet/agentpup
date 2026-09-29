@@ -32,8 +32,9 @@ describe("original bundled AgentPup design", () => {
   });
 
   it("keeps editable source, generation disclosure, export steps, and license", async () => {
-    const [sourceReadme, notes, license, main, html, notices] = await Promise.all([
+    const [sourceReadme, exporter, notes, license, main, html, notices] = await Promise.all([
       readFile(new URL("../../../pets/agentpup/source/README.md", import.meta.url), "utf8"),
+      readFile(new URL("../../../pets/agentpup/source/export.mjs", import.meta.url), "utf8"),
       readFile(new URL("../../../pets/agentpup/source/design-notes.md", import.meta.url), "utf8"),
       readFile(new URL("../../../pets/agentpup/source/LICENSE", import.meta.url), "utf8"),
       readFile(new URL("./main.ts", import.meta.url), "utf8"),
@@ -43,6 +44,10 @@ describe("original bundled AgentPup design", () => {
 
     expect(sourceReadme).toContain("OpenAI image generation");
     expect(sourceReadme).toContain("export.mjs");
+    expect(sourceReadme).toContain("animation-sheets");
+    expect(exporter).toContain('"idle-grid.png"');
+    expect(exporter).toContain('"working-grid.png"');
+    expect(exporter).toContain('"needs-you-grid.png"');
     expect(notes).toContain("Needs you");
     expect(license).toContain("MIT License");
     expect(main).toContain('displayName: "AgentPup"');

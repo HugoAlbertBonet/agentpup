@@ -179,8 +179,11 @@ Packs are untrusted input. The implemented importer applies these limits:
 
 The original AgentPup design is bundled under the MIT license and works offline.
 Its editable pose masters, generation disclosure, review board, design notes,
-and deterministic atlas exporter live in `pets/agentpup/source`; its importable
-runtime pair lives in `pets/agentpup/runtime`. Downloaded gallery pets remain
+generated animation source sheets, and deterministic atlas exporter live in
+`pets/agentpup/source`; its importable runtime pair lives in
+`pets/agentpup/runtime`. The Pet settings animation preview plays the exact
+idle, working, needs-you, and ready rows of the currently selected pack.
+Downloaded gallery pets remain
 opt-in and local. Check each selected design's provenance and rights before
 redistribution; the gallery itself notes that some entries may be unofficial
 fan-made content.

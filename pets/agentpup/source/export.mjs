@@ -8,6 +8,7 @@ const sourceDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packDirectory = path.dirname(sourceDirectory);
 const repositoryRoot = path.resolve(packDirectory, "../..");
 const mastersDirectory = path.join(sourceDirectory, "masters");
+const animationSheetsDirectory = path.join(sourceDirectory, "animation-sheets");
 const runtimeDirectory = path.join(packDirectory, "runtime");
 const bundledSheet = path.join(
   repositoryRoot,
@@ -58,21 +59,42 @@ const rows = [
   ["neutral", [1, 0, -1, 0, 1, 0, -1, 0]]
 ];
 
+const generatedAnimationRows = new Map([
+  [0, { filename: "idle-grid.png", frameIndices: [0, 1, 2, 3, 4, 5, 5, 5] }],
+  [3, { filename: "needs-you-grid.png", frameIndices: [0, 2, 3, 5, 5, 5, 5, 5] }],
+  [7, { filename: "working-grid.png", frameIndices: [0, 1, 2, 3, 4, 5, 5, 5] }]
+]);
+
+for (const { filename } of generatedAnimationRows.values()) {
+  const input = path.join(animationSheetsDirectory, filename);
+  if (!existsSync(input)) {
+    throw new Error(`Missing animation source sheet: ${input}`);
+  }
+}
+
 try {
   mkdirSync(runtimeDirectory, { recursive: true });
 
   let frameIndex = 0;
-  for (const [pose, verticalOffsets] of rows) {
+  for (const [rowIndex, [pose, verticalOffsets]] of rows.entries()) {
     const mirrored = pose === "walk-left";
     const masterName = mirrored ? poses.walk : poses[pose];
-    for (const verticalOffset of verticalOffsets) {
+    const generatedRow = generatedAnimationRows.get(rowIndex);
+    for (const [columnIndex, verticalOffset] of verticalOffsets.entries()) {
       const output = path.join(workDirectory, `frame-${String(frameIndex).padStart(3, "0")}.png`);
-      const transform = mirrored
-        ? `scale=172:190:force_original_aspect_ratio=decrease,hflip[pet]`
-        : `scale=172:190:force_original_aspect_ratio=decrease[pet]`;
+      const generatedFrame = generatedRow?.frameIndices[columnIndex];
+      const input = generatedRow === undefined
+        ? path.join(mastersDirectory, masterName)
+        : path.join(animationSheetsDirectory, generatedRow.filename);
+      const transform = generatedFrame !== undefined
+        ? `crop=512:512:${(generatedFrame % 3) * 512}:${Math.floor(generatedFrame / 3) * 512},` +
+          `scale=184:196:force_original_aspect_ratio=decrease[pet]`
+        : mirrored
+          ? `scale=172:190:force_original_aspect_ratio=decrease,hflip[pet]`
+          : `scale=172:190:force_original_aspect_ratio=decrease[pet]`;
       runFfmpeg([
         "-i",
-        path.join(mastersDirectory, masterName),
+        input,
         "-filter_complex",
         `[0:v]${transform};color=c=black@0:s=192x208,format=rgba[bg];` +
           `[bg][pet]overlay=x=(W-w)/2:y=H-h-5+${verticalOffset}:format=auto`,
@@ -114,7 +136,7 @@ try {
     runtimeSheet
   ]);
 
-  const reviewFrames = [0, 8, 24, 32, 40, 56];
+  const reviewFrames = [0, 8, 26, 32, 40, 56];
   const labels = ["Idle", "Walk", "Needs you", "Ready", "Concern", "Working"];
   const reviewInputs = reviewFrames.flatMap((index) => [
     "-i",

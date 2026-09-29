@@ -71,6 +71,28 @@
             </div>
             <span id="pet-message" class="pet-message" role="status"></span>
           </div>
+          <div id="pet-animation-preview" class="animation-preview" aria-label="Pet animation preview">
+            <span class="setting-section-label">Animation preview</span>
+            <div class="animation-preview-grid">
+              <figure class="animation-preview-card">
+                <span class="animation-preview-frame"><span class="pet-sprite preview-sprite" data-preview-state="idle" aria-hidden="true"></span></span>
+                <figcaption>Idle</figcaption>
+              </figure>
+              <figure class="animation-preview-card">
+                <span class="animation-preview-frame"><span class="pet-sprite preview-sprite" data-preview-state="working" aria-hidden="true"></span></span>
+                <figcaption>Working</figcaption>
+              </figure>
+              <figure class="animation-preview-card">
+                <span class="animation-preview-frame"><span class="pet-sprite preview-sprite" data-preview-state="needs-you" aria-hidden="true"></span></span>
+                <figcaption>Needs you</figcaption>
+              </figure>
+              <figure class="animation-preview-card">
+                <span class="animation-preview-frame"><span class="pet-sprite preview-sprite" data-preview-state="ready" aria-hidden="true"></span></span>
+                <figcaption>Ready</figcaption>
+              </figure>
+            </div>
+            <small>These are the exact sprite rows used on the desktop.</small>
+          </div>
           <button id="integrations-open" class="diagnostics-open" type="button">
             <span><strong>Agent integrations</strong><small>Install, repair, or remove local monitoring hooks</small></span>
             <span aria-hidden="true">›</span>

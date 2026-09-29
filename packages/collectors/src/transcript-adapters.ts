@@ -230,6 +230,17 @@ export function parseClaudeTranscript(
         if (toolUseId !== undefined) pending.delete(toolUseId);
       }
 
+      if (
+        record.toolDenialKind === "automode-unavailable" &&
+        record.toolDenialEndsTurn === true
+      ) {
+        activity = "failed";
+        resultReady = true;
+        pending.clear();
+        rejectedToolResultId = string(record.uuid);
+        continue;
+      }
+
       if (hasRejectedToolResult) {
         activity = "interrupted";
         resultReady = false;

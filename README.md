@@ -106,6 +106,8 @@ Click the pet to open agent activity, then choose the gear button to open **Pet 
 - **Gallery ↗** opens the [OpenPets gallery](https://openpets.dev/#pets) in the default browser.
 - **Import .zip** opens a native file picker. Download a gallery pet's `.zip`, then select it here; the imported pet becomes active immediately.
 - **Next pet** cycles through the original bundled AgentPup and every imported design.
+- **Animation preview** plays the selected pet's actual idle, working, needs-you,
+  and ready atlas rows inside Settings so pack behavior can be reviewed directly.
 
 AgentPup accepts OpenPets V1 and V2 packs containing `pet.json` and `spritesheet.webp`. Imports validate archive paths, file types, metadata, byte limits, and the fixed sprite dimensions before an asset reaches the renderer. The selected design persists across restarts. The built-in AgentPup source art, export script, design notes, and MIT license are kept in `pets/agentpup`. Individual gallery entries can have separate rights or attribution requirements; see the pack's gallery information before redistributing it.
 

@@ -76,6 +76,9 @@ const statusControls = byId<HTMLElement>("status-controls");
 const cornerMove = byId<HTMLButtonElement>("corner-move");
 const shell = byId<HTMLElement>("pet-shell");
 const sprite = byId<HTMLElement>("pet-sprite");
+const previewSprites = [
+  ...document.querySelectorAll<HTMLElement>("[data-preview-state]")
+];
 const petContainer = byId<HTMLElement>("pet-container");
 const petName = byId<HTMLElement>("pet-name");
 const petMessage = byId<HTMLElement>("pet-message");
@@ -143,26 +146,47 @@ function renderStartupPreference(preference: StartupPreference): void {
   startupEnabled.disabled = !preference.supported;
 }
 
+function configureSpriteAnimation(
+  target: HTMLElement,
+  state: PetVisualState,
+  preview: boolean
+): void {
+  const animation = resolvePetAnimation(state);
+  target.style.setProperty("--sprite-row-y", `${-animation.row * 208}px`);
+  target.style.setProperty("--sprite-end-x", `${-animation.frames * 192}px`);
+  target.style.setProperty("--sprite-frames", String(animation.frames));
+  target.style.setProperty("--sprite-duration", `${animation.durationMs}ms`);
+  target.style.setProperty(
+    "--sprite-iterations",
+    preview ? "infinite" : String(animation.iterations)
+  );
+  target.style.animationName = "none";
+  void target.offsetWidth;
+  target.style.animationName = "";
+}
+
+function applyPreviewAnimations(): void {
+  for (const previewSprite of previewSprites) {
+    const state = previewSprite.dataset.previewState as PetVisualState;
+    configureSpriteAnimation(previewSprite, state, true);
+  }
+}
+
 function applyPetAnimation(state: PetVisualState, restart = false): void {
   if (!restart && state === visualState) return;
   visualState = state;
-  const animation = resolvePetAnimation(state);
-  sprite.style.setProperty("--sprite-row-y", `${-animation.row * 208}px`);
-  sprite.style.setProperty("--sprite-end-x", `${-animation.frames * 192}px`);
-  sprite.style.setProperty("--sprite-frames", String(animation.frames));
-  sprite.style.setProperty("--sprite-duration", `${animation.durationMs}ms`);
-  sprite.style.setProperty("--sprite-iterations", String(animation.iterations));
-  sprite.style.animationName = "none";
-  void sprite.offsetWidth;
-  sprite.style.animationName = "";
+  configureSpriteAnimation(sprite, state, false);
 }
 
 function showPet(pet: PetPresentation): void {
   petName.textContent = pet.displayName;
   petName.title = pet.description;
-  sprite.style.backgroundImage = `url("${pet.imageUrl}")`;
-  sprite.style.backgroundSize = `${pet.layout.frameWidth * pet.layout.columns}px ${pet.layout.frameHeight * pet.layout.rows}px`;
+  for (const petSprite of [sprite, ...previewSprites]) {
+    petSprite.style.backgroundImage = `url("${pet.imageUrl}")`;
+    petSprite.style.backgroundSize = `${pet.layout.frameWidth * pet.layout.columns}px ${pet.layout.frameHeight * pet.layout.rows}px`;
+  }
   applyPetAnimation(visualState, true);
+  applyPreviewAnimations();
 }
 
 function applyPetPreferences(next: PetPreferences, restartAnimation = false): void {
@@ -217,6 +241,7 @@ function applyPetPreferences(next: PetPreferences, restartAnimation = false): vo
 
   if (next.animationsEnabled && (animationsChanged || restartAnimation)) {
     applyPetAnimation(visualState, true);
+    applyPreviewAnimations();
   }
   if (currentStatus !== null) render(currentStatus);
   scheduleWindowShape();
@@ -236,7 +261,8 @@ function showPanelView(view: "activity" | "settings" | "diagnostics" | "integrat
         ? "Pet settings"
         : view === "diagnostics"
           ? "Diagnostics"
-          : "Agent integrations";
+      : "Agent integrations";
+  if (view === "settings" && preferences.animationsEnabled) applyPreviewAnimations();
   panel.setAttribute(
     "aria-label",
     view === "activity"
@@ -390,6 +416,7 @@ function stateLabel(agent: AgentStatus): string {
   }
   if (!agent.sourceConnected) return "Collector disconnected";
   if (agent.activity === "unknown") return "Discovered · live status unavailable";
+  if (agent.activity === "failed") return "Failed · result ready";
   if (agent.resultReady) return "Result ready";
   return agent.activity[0]!.toUpperCase() + agent.activity.slice(1);
 }

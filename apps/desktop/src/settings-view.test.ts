@@ -20,6 +20,11 @@ describe("pet settings view", () => {
     expect(settings).toContain('id="pet-cycle"');
     expect(settings).toContain('id="pet-gallery"');
     expect(settings).toContain('id="pet-import"');
+    expect(settings).toContain('id="pet-animation-preview"');
+    expect(settings).toContain('data-preview-state="idle"');
+    expect(settings).toContain('data-preview-state="working"');
+    expect(settings).toContain('data-preview-state="needs-you"');
+    expect(settings).toContain('data-preview-state="ready"');
     expect(settings).toContain('id="status-size"');
     expect(settings).toContain('id="status-font-size"');
     expect(settings).toContain('id="status-line-gap"');
@@ -43,6 +48,18 @@ describe("pet settings view", () => {
     expect(integrations).toContain('id="integration-install"');
     expect(integrations).toContain('id="integration-uninstall"');
     expect(integrations).toContain('id="integration-message"');
+  });
+
+  it("plays the actual sprite rows in the pet animation preview", async () => {
+    const [renderer, css] = await Promise.all([
+      readFile(new URL("./renderer.ts", import.meta.url), "utf8"),
+      readFile(new URL("../renderer/styles.css", import.meta.url), "utf8")
+    ]);
+
+    expect(renderer).toContain('querySelectorAll<HTMLElement>("[data-preview-state]")');
+    expect(renderer).toContain("resolvePetAnimation(state)");
+    expect(css).toContain(".animation-preview-grid");
+    expect(css).toContain(".animation-preview-frame");
   });
 
   it("keeps the status badge available when the character is hidden", async () => {

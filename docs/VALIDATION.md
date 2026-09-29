@@ -11,9 +11,10 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Native Windows Electron host launched from WSL with npm run dev:windows
 - Electron 44.4.5
 - Codex CLI 0.157.1
-- Claude Code 2.1.161, including its VS Code frontend
+- Claude Code CLI 2.1.161; the affected VS Code transcript reports frontend
+  version 2.1.283
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 33 test files and 160 tests passed, followed by a successful build
+- Latest full npm run check: 33 test files and 162 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -25,6 +26,13 @@ lifecycle structure or aggregate counts.
 
 - Opening or typing in an empty Claude Code VS Code chat does not create a false
   working state.
+- Claude Code Auto mode can end a turn after ten consecutive server-side safety
+  classifier responses return no verdict. AgentPup's observer hook returns only
+  neutral `{}` and does not participate in that classifier. A sanitized
+  regression fixture now maps `automode-unavailable` with
+  `toolDenialEndsTurn: true` to a failed, result-ready entry instead of leaving
+  the session working. A live metadata-only collector snapshot after the fix
+  emitted the affected session as result ready.
 - A normal Claude Code turn becomes working and then result ready.
 - Claude Code AskUserQuestion creates needs-you state and clears after an answer.
 - Two independent Claude Code questions can remain pending simultaneously;
