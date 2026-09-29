@@ -16,8 +16,8 @@ const idleAnimation: PetAnimation = {
 
 const animations: Record<PetVisualState, PetAnimation> = {
   idle: idleAnimation,
-  working: { row: 7, frames: 6, durationMs: 820, iterations: "infinite" },
-  "needs-you": { row: 3, frames: 4, durationMs: 700, iterations: 2 },
+  working: { row: 7, frames: 6, durationMs: 1_200, iterations: "infinite" },
+  "needs-you": { row: 3, frames: 4, durationMs: 1_000, iterations: 2 },
   ready: idleAnimation,
   unknown: idleAnimation
 };

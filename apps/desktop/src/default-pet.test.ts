@@ -48,6 +48,8 @@ describe("original bundled AgentPup design", () => {
     expect(exporter).toContain('"idle-grid.png"');
     expect(exporter).toContain('"working-grid.png"');
     expect(exporter).toContain('"needs-you-grid.png"');
+    expect(exporter).toContain("alphaextract,bbox=min_val=1");
+    expect(exporter).toContain("targetHeight");
     expect(notes).toContain("Needs you");
     expect(license).toContain("MIT License");
     expect(main).toContain('displayName: "AgentPup"');

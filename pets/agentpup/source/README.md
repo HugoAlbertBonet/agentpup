@@ -21,7 +21,8 @@ root:
 node pets/agentpup/source/export.mjs
 ```
 
-`export.mjs` crops the generated animation grids, scales and positions the
+`export.mjs` measures each generated frame's alpha bounds, normalizes every
+frame in a loop to one visual height and ground line, scales and positions the
 remaining pose masters, constructs the 1536 by 2288 pixel atlas, writes a
 lossless WebP runtime sheet, creates the review board, and copies the exact
 runtime sheet into the desktop application's bundled assets.

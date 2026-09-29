@@ -29,6 +29,43 @@ function runFfmpeg(arguments_) {
   }
 }
 
+function measureAlphaBounds(input, frameIndex) {
+  const cellX = (frameIndex % 3) * 512;
+  const cellY = Math.floor(frameIndex / 3) * 512;
+  const result = spawnSync(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-i",
+      input,
+      "-vf",
+      `crop=512:512:${cellX}:${cellY},alphaextract,bbox=min_val=1`,
+      "-frames:v",
+      "1",
+      "-f",
+      "null",
+      "-"
+    ],
+    { encoding: "utf8" }
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(result.stderr.trim() || `ffmpeg exited with ${result.status}`);
+  }
+  const bounds = result.stderr.match(
+    /x1:(?<x>\d+) x2:\d+ y1:(?<y>\d+) y2:\d+ w:(?<width>\d+) h:(?<height>\d+)/
+  )?.groups;
+  if (bounds === undefined) {
+    throw new Error(`Could not measure transparent bounds for frame ${frameIndex} in ${input}`);
+  }
+  return {
+    x: Number(bounds.x),
+    y: Number(bounds.y),
+    width: Number(bounds.width),
+    height: Number(bounds.height)
+  };
+}
+
 const poses = {
   neutral: "neutral.png",
   walk: "walk-right.png",
@@ -60,9 +97,18 @@ const rows = [
 ];
 
 const generatedAnimationRows = new Map([
-  [0, { filename: "idle-grid.png", frameIndices: [0, 1, 2, 3, 4, 5, 5, 5] }],
-  [3, { filename: "needs-you-grid.png", frameIndices: [0, 2, 3, 5, 5, 5, 5, 5] }],
-  [7, { filename: "working-grid.png", frameIndices: [0, 1, 2, 3, 4, 5, 5, 5] }]
+  [
+    0,
+    { filename: "idle-grid.png", frameIndices: [0, 1, 2, 3, 4, 5, 5, 5], targetHeight: 137 }
+  ],
+  [
+    3,
+    { filename: "needs-you-grid.png", frameIndices: [0, 1, 2, 4, 4, 4, 4, 4], targetHeight: 180 }
+  ],
+  [
+    7,
+    { filename: "working-grid.png", frameIndices: [0, 1, 2, 3, 4, 5, 5, 5], targetHeight: 156 }
+  ]
 ]);
 
 for (const { filename } of generatedAnimationRows.values()) {
@@ -86,9 +132,13 @@ try {
       const input = generatedRow === undefined
         ? path.join(mastersDirectory, masterName)
         : path.join(animationSheetsDirectory, generatedRow.filename);
-      const transform = generatedFrame !== undefined
+      const bounds = generatedFrame === undefined
+        ? undefined
+        : measureAlphaBounds(input, generatedFrame);
+      const transform = generatedFrame !== undefined && bounds !== undefined && generatedRow !== undefined
         ? `crop=512:512:${(generatedFrame % 3) * 512}:${Math.floor(generatedFrame / 3) * 512},` +
-          `scale=184:196:force_original_aspect_ratio=decrease[pet]`
+          `crop=${bounds.width}:${bounds.height}:${bounds.x}:${bounds.y},` +
+          `scale=-2:${generatedRow.targetHeight}[pet]`
         : mirrored
           ? `scale=172:190:force_original_aspect_ratio=decrease,hflip[pet]`
           : `scale=172:190:force_original_aspect_ratio=decrease[pet]`;
@@ -97,7 +147,7 @@ try {
         input,
         "-filter_complex",
         `[0:v]${transform};color=c=black@0:s=192x208,format=rgba[bg];` +
-          `[bg][pet]overlay=x=(W-w)/2:y=H-h-5+${verticalOffset}:format=auto`,
+          `[bg][pet]overlay=x=(W-w)/2:y=H-h-5+${generatedFrame === undefined ? verticalOffset : 0}:format=auto`,
         "-frames:v",
         "1",
         output
