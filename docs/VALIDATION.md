@@ -197,6 +197,16 @@ lifecycle structure or aggregate counts.
   clean install, installed-app launch, shutdown, uninstall, and upload. Its
   artifact is 114,878,281 bytes with digest
   `sha256:8e97651bb76b2a4457d300d204dfa1405b55ccdebaae0524aa05b6cb53f27e79`.
+- Release candidate 14 passed the macOS/Linux packaging and packaged-launch
+  workflow (run 36522472901) with explicit Linux backend detection and window
+  policy. The Linux AppImage artifact is 128,487,311 bytes with digest
+  `sha256:8c228e892249c39f5519a4cd12086b248a3f7b78ef6b6e7f42a98e408f812dc0`;
+  the unsigned macOS ZIP is 132,418,772 bytes with digest
+  `sha256:274059ee81f5190a2618de94d812d117450327a596186d70dfaff90bdfe5fab4`.
+  The Windows workflow (run 36522472837) passed tests, NSIS verification, clean
+  install, installed-app launch, shutdown, uninstall, and upload after the tray
+  restart placement fix. Its artifact is 114,878,746 bytes with digest
+  `sha256:98f8b34ef647e37629d6195b901da55e0212d4cf804efd1560834a714e31479e`.
 
 ## Still requiring manual or release validation
 
