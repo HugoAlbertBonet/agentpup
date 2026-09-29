@@ -187,6 +187,16 @@ lifecycle structure or aggregate counts.
   shutdown, uninstall, and upload workflow (run 36487622932). The Windows
   artifact is 114,877,923 bytes with digest
   `sha256:ed7dba42ff8d12a5bad9b3daf8ff76d0e8178e3e3ea01e776ca7cc9576a51fd9`.
+- Release candidate 13 passed the macOS/Linux packaging and packaged-launch
+  workflow (run 36520868874) after native tray creation was enabled. The Linux
+  AppImage artifact is 128,485,943 bytes with digest
+  `sha256:43478d48571c732ee97a74725d41e89b3b0223a4f14623e551c75c200c7bc02e`;
+  the unsigned macOS ZIP is 132,417,684 bytes with digest
+  `sha256:37b577f6bfbb6c0e1e64c9235f805a7a9cc334f53eb2dbaf1ba2c24c38098d1d`.
+  The Windows workflow (run 36520868886) also passed tests, NSIS verification,
+  clean install, installed-app launch, shutdown, uninstall, and upload. Its
+  artifact is 114,878,281 bytes with digest
+  `sha256:8e97651bb76b2a4457d300d204dfa1405b55ccdebaae0524aa05b6cb53f27e79`.
 
 ## Still requiring manual or release validation
 
