@@ -48,6 +48,7 @@ import {
   type OverlayRuntime
 } from "./window-policy.js";
 import { normalizeWindowShape } from "./window-shape.js";
+import { desktopAcceptanceReportPath } from "./desktop-acceptance.js";
 import {
   advanceMotion,
   chooseEdgeTarget,
@@ -113,6 +114,7 @@ const WINDOW_HEIGHT = 680;
 const WINDOW_MARGIN = 16;
 const runtime: OverlayRuntime = detectOverlayRuntime(process.platform, process.env, process.argv);
 const roamingEnabled = isRoamingEnabled(process.argv);
+const acceptanceReportPath = desktopAcceptanceReportPath(process.argv);
 const configuredWslDistro = resolveWslDistro(
   process.argv,
   process.env.AGENTPUP_WSL_DISTRO ?? process.env.CLAUDEPET_WSL_DISTRO
@@ -737,6 +739,32 @@ function createOverlay(): BrowserWindow {
     window.setHasShadow(false);
     ensureTopmost(window);
     updateTrayPresentation();
+    if (acceptanceReportPath !== undefined) {
+      const display = displayForWindow(window);
+      const report = {
+        schemaVersion: 1,
+        platform: process.platform,
+        runtime,
+        corner: currentCorner,
+        trayCreated: tray !== null && !tray.isDestroyed(),
+        startupControlSupported: supportsStartupControl(process.platform),
+        window: {
+          bounds: window.getBounds(),
+          workArea: display.workArea,
+          visible: window.isVisible(),
+          focused: window.isFocused(),
+          focusable: window.isFocusable(),
+          alwaysOnTop: window.isAlwaysOnTop(),
+          hasShadow: window.hasShadow()
+        }
+      };
+      void writeFile(acceptanceReportPath, `${JSON.stringify(report, null, 2)}\n`, {
+        encoding: "utf8",
+        mode: 0o600
+      }).catch((error: unknown) => {
+        console.error("[agentpup] Could not write desktop acceptance report:", error);
+      });
+    }
     if (roamingEnabled) startRoaming(window);
 
     if (process.argv.includes("--capture-diagnostics")) {

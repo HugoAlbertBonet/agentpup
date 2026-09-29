@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 29 test files and 139 tests passed, followed by a successful build
+- Latest full npm run check: 31 test files and 150 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -267,6 +267,10 @@ lifecycle structure or aggregate counts.
   that clicks both an excluded transparent point and the included rotate control.
   RC17 passed this check; real window-manager and compositor coverage remains
   unmeasured.
+- The native macOS workflow now launches the packaged application with a bounded
+  acceptance-report path and validates its actual BrowserWindow state: visible,
+  unfocused, non-focusable, topmost, shadowless, 460×680, and at the bottom-right
+  of the reported work area. Its first tagged execution is pending.
 - Finished-result retention is persisted as a whole-number limit from 0 through
   20, defaulting to five. Automated coverage verifies that only the newest
   result-ready agents contribute orange entries and counts, while working agents

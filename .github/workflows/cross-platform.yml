@@ -43,6 +43,9 @@ jobs:
       - name: Verify packaged Linux X11 click-through
         if: matrix.smoke-platform == 'linux'
         run: xvfb-run -a node scripts/verify-linux-x11-overlay.mjs 2>&1 | tee x11-overlay.log
+      - name: Verify packaged macOS overlay policy
+        if: matrix.smoke-platform == 'mac'
+        run: node scripts/verify-macos-overlay.mjs 2>&1 | tee macos-overlay.log
       - name: Smoke-test packaged application launch
         run: node scripts/smoke-unix-release.mjs ${{ matrix.smoke-platform }} 2>&1 | tee smoke-launch.log
       - uses: actions/upload-artifact@v4
@@ -61,4 +64,10 @@ jobs:
         with:
           name: AgentPup-Linux-X11-acceptance-log
           path: x11-overlay.log
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: failure() && matrix.smoke-platform == 'mac'
+        with:
+          name: AgentPup-macOS-overlay-acceptance-log
+          path: macos-overlay.log
           if-no-files-found: warn

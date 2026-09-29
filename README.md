@@ -146,7 +146,9 @@ their overlay, tray, focus, fullscreen, and compositor behavior is validated on
 real macOS, Linux X11, and supported Wayland desktops. Linux CI also launches
 the packaged app in a virtual X11 desktop and checks that an empty overlay area
 passes a click to a background window while the visible rotate control retains
-its click.
+its click. macOS CI reads the packaged window's native state after it is shown
+and checks bottom-right placement, visibility, nonactivation, topmost behavior,
+and shadow removal.
 
 On Linux, diagnostics distinguish X11, native Wayland, WSLg, and an unknown
 display backend. X11 is the current overlay target. Electron does not support
