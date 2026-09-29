@@ -35,6 +35,14 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run ${{ matrix.package-script }}
+      - name: Install X11 acceptance utility
+        if: matrix.smoke-platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xdotool
+      - name: Verify packaged Linux X11 click-through
+        if: matrix.smoke-platform == 'linux'
+        run: xvfb-run -a node scripts/verify-linux-x11-overlay.mjs 2>&1 | tee x11-overlay.log
       - name: Smoke-test packaged application launch
         run: node scripts/smoke-unix-release.mjs ${{ matrix.smoke-platform }} 2>&1 | tee smoke-launch.log
       - uses: actions/upload-artifact@v4
@@ -47,4 +55,10 @@ jobs:
         with:
           name: AgentPup-${{ matrix.smoke-platform }}-launch-log
           path: smoke-launch.log
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: failure() && matrix.smoke-platform == 'linux'
+        with:
+          name: AgentPup-Linux-X11-acceptance-log
+          path: x11-overlay.log
           if-no-files-found: warn

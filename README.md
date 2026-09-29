@@ -143,7 +143,10 @@ The macOS command produces a ZIP and the Linux command produces an AppImage.
 Both packages run the bundled local collector through Electron and do not
 require a separate Node.js installation. These artifacts are experimental until
 their overlay, tray, focus, fullscreen, and compositor behavior is validated on
-real macOS, Linux X11, and supported Wayland desktops.
+real macOS, Linux X11, and supported Wayland desktops. Linux CI also launches
+the packaged app in a virtual X11 desktop and checks that an empty overlay area
+passes a click to a background window while the visible rotate control retains
+its click.
 
 On Linux, diagnostics distinguish X11, native Wayland, WSLg, and an unknown
 display backend. X11 is the current overlay target. Electron does not support

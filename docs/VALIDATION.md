@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 28 test files and 137 tests passed, followed by a successful build
+- Latest full npm run check: 29 test files and 139 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -252,6 +252,9 @@ lifecycle structure or aggregate counts.
   transparent canvas. Automated coverage validates runtime policy and rejects
   empty, oversized, fractional, negative, excessive, or out-of-window shape
   messages. Real X11 click-through and interaction behavior is still unmeasured.
+  The native Linux workflow now includes a packaged virtual-X11 acceptance test
+  that clicks both an excluded transparent point and the included rotate control;
+  its first tagged execution is pending.
 - Finished-result retention is persisted as a whole-number limit from 0 through
   20, defaulting to five. Automated coverage verifies that only the newest
   result-ready agents contribute orange entries and counts, while working agents
