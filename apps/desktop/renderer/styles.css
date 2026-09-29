@@ -589,6 +589,11 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.setting-slider small {
+  color: #9fabb9;
+  font-size: 9px;
+}
+
 .setting-slider input {
   width: 100%;
   accent-color: #55d9a0;

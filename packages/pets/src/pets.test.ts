@@ -130,7 +130,8 @@ describe("OpenPets compatibility", () => {
       animationsEnabled: true,
       statusScale: 1,
       statusFontSize: 13,
-      statusLineGap: 9
+      statusLineGap: 9,
+      maxFinishedAgents: 5
     });
     expect(normalizePetPreferences({
       petEnabled: false,
@@ -138,14 +139,16 @@ describe("OpenPets compatibility", () => {
       animationsEnabled: false,
       statusScale: 1.2,
       statusFontSize: 16,
-      statusLineGap: 12
+      statusLineGap: 12,
+      maxFinishedAgents: 3
     })).toEqual({
       petEnabled: false,
       petScale: 0.82,
       animationsEnabled: false,
       statusScale: 1.2,
       statusFontSize: 16,
-      statusLineGap: 12
+      statusLineGap: 12,
+      maxFinishedAgents: 3
     });
     expect(normalizePetPreferences({ petScale: 12 })).toMatchObject({ petScale: 0.67 });
   });
@@ -166,5 +169,9 @@ describe("OpenPets compatibility", () => {
     expect(() => validatePetPreferencesPatch({ statusScale: 1.51 })).toThrow(/bar size/i);
     expect(() => validatePetPreferencesPatch({ statusFontSize: 9 })).toThrow(/font/i);
     expect(() => validatePetPreferencesPatch({ statusLineGap: 19 })).toThrow(/spacing/i);
+    expect(validatePetPreferencesPatch({ maxFinishedAgents: 0 })).toEqual({ maxFinishedAgents: 0 });
+    expect(validatePetPreferencesPatch({ maxFinishedAgents: 20 })).toEqual({ maxFinishedAgents: 20 });
+    expect(() => validatePetPreferencesPatch({ maxFinishedAgents: 21 })).toThrow(/finished/i);
+    expect(() => validatePetPreferencesPatch({ maxFinishedAgents: 1.5 })).toThrow(/finished/i);
   });
 });

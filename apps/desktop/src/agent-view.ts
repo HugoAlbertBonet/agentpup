@@ -55,3 +55,26 @@ export function applyAgentDismissals(
   }
   return { ...state, agents };
 }
+
+export function limitFinishedAgents(state: StatusState, maximum: number): StatusState {
+  const limit = Math.max(0, Math.floor(maximum));
+  const finished = Object.entries(state.agents).filter(([, agent]) => agent.resultReady);
+  if (finished.length <= limit) return state;
+
+  const retained = new Set(
+    finished
+      .sort(([leftKey, left], [rightKey, right]) => {
+        const observed = right.lastObservedAt.localeCompare(left.lastObservedAt);
+        if (observed !== 0) return observed;
+        const sequence = right.activityUpdatedSequence - left.activityUpdatedSequence;
+        return sequence !== 0 ? sequence : leftKey.localeCompare(rightKey);
+      })
+      .slice(0, limit)
+      .map(([key]) => key)
+  );
+  const agents: Record<string, AgentStatus> = {};
+  for (const [key, agent] of Object.entries(state.agents)) {
+    if (!agent.resultReady || retained.has(key)) agents[key] = agent;
+  }
+  return { ...state, agents };
+}

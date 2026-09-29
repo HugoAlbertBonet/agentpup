@@ -84,9 +84,14 @@ Remove that login registration with `npm run autostart:windows:disable`. The
 launcher preserves the selected WSL distribution and can recover when WSL's
 Windows-executable binfmt registration is temporarily unavailable.
 
-Installed Windows builds also provide a **Start with Windows** checkbox in the
-tray menu; it does not require Node.js or the source checkout. On Windows,
-macOS, and Linux, clicking the tray icon stops the pet window and collector
+The tray menu provides **Start with Windows** on Windows and **Start at login**
+on macOS and Linux. Windows and macOS use Electron's native login-item service;
+Linux uses an AgentPup-owned freedesktop entry at
+`$XDG_CONFIG_HOME/autostart/dev.agentpup.desktop` (or
+`~/.config/autostart/dev.agentpup.desktop`). On unsigned macOS development and
+release-candidate builds, the operating system may not honor the login item
+until the app is signed and notarized. On every platform, clicking the tray icon
+stops the pet window and collector
 while retaining the small controller; clicking it again starts a fresh pet
 runtime at the default bottom-right corner of the primary display. Native macOS
 and Linux tray behavior remains experimental until it is checked on real
@@ -94,7 +99,7 @@ desktops.
 
 ## Pet designs
 
-Click the pet to open agent activity, then choose the gear button to open **Pet settings**. Settings let you hide the character while retaining the status bar, resize the pet, disable sprite animation, and adjust the status bar's overall size, number font size, and row spacing. The design controls provide three actions:
+Click the pet to open agent activity, then choose the gear button to open **Pet settings**. Settings let you hide the character while retaining the status bar, resize the pet, disable sprite animation, adjust the status bar's overall size, number font size, and row spacing, and keep only the newest 0–20 finished-result entries. The default is five; active agents and pending requests are never removed by this limit. The design controls provide three actions:
 
 - **Gallery ↗** opens the [OpenPets gallery](https://openpets.dev/#pets) in the default browser.
 - **Import .zip** opens a native file picker. Download a gallery pet's `.zip`, then select it here; the imported pet becomes active immediately.

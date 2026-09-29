@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 27 test files and 122 tests passed, followed by a successful build
+- Latest full npm run check: 27 test files and 127 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -213,13 +213,20 @@ lifecycle structure or aggregate counts.
 - Native macOS and Linux packaging workflows, direct bundled collector launch,
   and platform-specific identities are implemented and covered by automated
   tests. The desktop host now also creates a platform-sized tray controller on
-  both systems with stop/start and quit actions; the Windows-only startup item
-  is omitted. Linux runtime diagnostics and policies now distinguish X11,
+  both systems with stop/start and quit actions. macOS uses Electron's native
+  main-app login service, while Linux atomically manages only its own
+  freedesktop autostart file and uses the stable AppImage path when available.
+  The macOS control may not take effect for unsigned/unnotarized builds. Linux
+  runtime diagnostics and policies distinguish X11,
   native Wayland, WSLg, and an unknown backend. Native Wayland is explicitly
   limited because Electron does not support the required positioning, movement,
   or always-on-top APIs there; X11/Xwayland is the current implementation
   target. Native CI packaging passes; installed-app launch and real-desktop
   overlay/tray behavior have not yet been measured on those platforms.
+- Finished-result retention is persisted as a whole-number limit from 0 through
+  20, defaulting to five. Automated coverage verifies that only the newest
+  result-ready agents contribute orange entries and counts, while working agents
+  remain visible. The settings control and behavior await manual UI validation.
 - The WSL-to-Windows development launcher now terminates the previous Electron
   process tree and waits for all runtime children before relaunching. The
   reference desktop reported exactly one AgentPup main process after restart;

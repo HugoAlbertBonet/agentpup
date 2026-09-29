@@ -6,6 +6,8 @@ export const statusFontSizeMinimum = 10;
 export const statusFontSizeMaximum = 20;
 export const statusLineGapMinimum = 2;
 export const statusLineGapMaximum = 18;
+export const maxFinishedAgentsMinimum = 0;
+export const maxFinishedAgentsMaximum = 20;
 
 export interface PetPreferences {
   readonly petEnabled: boolean;
@@ -14,6 +16,7 @@ export interface PetPreferences {
   readonly statusScale: number;
   readonly statusFontSize: number;
   readonly statusLineGap: number;
+  readonly maxFinishedAgents: number;
 }
 
 export const defaultPetPreferences: PetPreferences = {
@@ -22,7 +25,8 @@ export const defaultPetPreferences: PetPreferences = {
   animationsEnabled: true,
   statusScale: 1,
   statusFontSize: 13,
-  statusLineGap: 9
+  statusLineGap: 9,
+  maxFinishedAgents: 5
 };
 
 export type PetPreferencesPatch = Partial<PetPreferences>;
@@ -49,7 +53,10 @@ export function normalizePetPreferences(value: unknown): PetPreferences {
       : defaultPetPreferences.statusFontSize,
     statusLineGap: isStatusLineGap(record.statusLineGap)
       ? record.statusLineGap
-      : defaultPetPreferences.statusLineGap
+      : defaultPetPreferences.statusLineGap,
+    maxFinishedAgents: isMaxFinishedAgents(record.maxFinishedAgents)
+      ? record.maxFinishedAgents
+      : defaultPetPreferences.maxFinishedAgents
   };
 }
 
@@ -61,7 +68,8 @@ export function validatePetPreferencesPatch(value: unknown): PetPreferencesPatch
     "animationsEnabled",
     "statusScale",
     "statusFontSize",
-    "statusLineGap"
+    "statusLineGap",
+    "maxFinishedAgents"
   ]);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) throw new Error(`Unexpected pet preference: ${key}`);
@@ -73,6 +81,7 @@ export function validatePetPreferencesPatch(value: unknown): PetPreferencesPatch
     statusScale?: number;
     statusFontSize?: number;
     statusLineGap?: number;
+    maxFinishedAgents?: number;
   } = {};
   if (Object.hasOwn(value, "petEnabled")) {
     if (typeof value.petEnabled !== "boolean") throw new Error("Pet enabled setting is invalid.");
@@ -114,6 +123,14 @@ export function validatePetPreferencesPatch(value: unknown): PetPreferencesPatch
     }
     patch.statusLineGap = value.statusLineGap;
   }
+  if (Object.hasOwn(value, "maxFinishedAgents")) {
+    if (!isMaxFinishedAgents(value.maxFinishedAgents)) {
+      throw new Error(
+        `Maximum finished agents must be a whole number between ${maxFinishedAgentsMinimum} and ${maxFinishedAgentsMaximum}.`
+      );
+    }
+    patch.maxFinishedAgents = value.maxFinishedAgents;
+  }
   return patch;
 }
 
@@ -140,6 +157,13 @@ function isStatusFontSize(value: unknown): value is number {
 function isStatusLineGap(value: unknown): value is number {
   return (
     isNumberInRange(value, statusLineGapMinimum, statusLineGapMaximum) &&
+    Number.isInteger(value)
+  );
+}
+
+function isMaxFinishedAgents(value: unknown): value is number {
+  return (
+    isNumberInRange(value, maxFinishedAgentsMinimum, maxFinishedAgentsMaximum) &&
     Number.isInteger(value)
   );
 }

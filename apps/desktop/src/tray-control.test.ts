@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   autostartTrayPresentation,
   supportsSystemTray,
-  supportsWindowsAutostart,
+  supportsStartupControl,
   toggleTrayRuntime,
   trayIconSize,
   trayPresentation
@@ -36,13 +36,13 @@ describe("system tray control", () => {
     });
   });
 
-  it("shows whether AgentPup will start with Windows", () => {
-    expect(autostartTrayPresentation(true)).toEqual({
+  it("shows platform-appropriate startup labels", () => {
+    expect(autostartTrayPresentation("win32", true)).toEqual({
       label: "Start with Windows",
       checked: true
     });
-    expect(autostartTrayPresentation(false)).toEqual({
-      label: "Start with Windows",
+    expect(autostartTrayPresentation("darwin", false)).toEqual({
+      label: "Start at login",
       checked: false
     });
   });
@@ -62,9 +62,10 @@ describe("system tray control", () => {
     expect(trayIconSize("linux")).toBe(32);
   });
 
-  it("keeps the Windows startup control off other platform menus", () => {
-    expect(supportsWindowsAutostart("win32")).toBe(true);
-    expect(supportsWindowsAutostart("darwin")).toBe(false);
-    expect(supportsWindowsAutostart("linux")).toBe(false);
+  it("offers startup controls on every supported desktop platform", () => {
+    expect(supportsStartupControl("win32")).toBe(true);
+    expect(supportsStartupControl("darwin")).toBe(true);
+    expect(supportsStartupControl("linux")).toBe(true);
+    expect(supportsStartupControl("aix")).toBe(false);
   });
 });

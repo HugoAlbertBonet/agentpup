@@ -21,6 +21,7 @@ import {
   applyAgentDismissals,
   canDismissAgent,
   dismissAllDismissibleAgents,
+  limitFinishedAgents,
   providerPresentation
 } from "./agent-view.js";
 
@@ -90,6 +91,8 @@ const statusFontSize = byId<HTMLInputElement>("status-font-size");
 const statusFontSizeValue = byId<HTMLOutputElement>("status-font-size-value");
 const statusLineGap = byId<HTMLInputElement>("status-line-gap");
 const statusLineGapValue = byId<HTMLOutputElement>("status-line-gap-value");
+const maxFinishedAgents = byId<HTMLInputElement>("max-finished-agents");
+const maxFinishedAgentsValue = byId<HTMLOutputElement>("max-finished-agents-value");
 
 let visualState: PetVisualState = "idle";
 let activityPanelTitle = "No monitored agents";
@@ -102,7 +105,8 @@ let preferences: PetPreferences = {
   animationsEnabled: true,
   statusScale: 1,
   statusFontSize: 13,
-  statusLineGap: 9
+  statusLineGap: 9,
+  maxFinishedAgents: 5
 };
 
 function applyPetAnimation(state: PetVisualState, restart = false): void {
@@ -173,10 +177,14 @@ function applyPetPreferences(next: PetPreferences, restartAnimation = false): vo
   statusLineGap.value = String(next.statusLineGap);
   statusLineGapValue.value = `${next.statusLineGap}px`;
   statusLineGapValue.textContent = statusLineGapValue.value;
+  maxFinishedAgents.value = String(next.maxFinishedAgents);
+  maxFinishedAgentsValue.value = String(next.maxFinishedAgents);
+  maxFinishedAgentsValue.textContent = maxFinishedAgentsValue.value;
 
   if (next.animationsEnabled && (animationsChanged || restartAnimation)) {
     applyPetAnimation(visualState, true);
   }
+  if (currentStatus !== null) render(currentStatus);
 }
 
 function showPanelView(view: "activity" | "settings" | "diagnostics" | "integrations"): void {
@@ -416,7 +424,10 @@ function renderAgent(key: string, agent: AgentStatus): HTMLLIElement {
 
 function render(nextState: StatusState): void {
   currentStatus = nextState;
-  const state = applyAgentDismissals(nextState, dismissedAgents);
+  const state = limitFinishedAgents(
+    applyAgentDismissals(nextState, dismissedAgents),
+    preferences.maxFinishedAgents
+  );
   const summary = aggregateStatus(state);
   workingCount.textContent = String(summary.working);
   needsCount.textContent = String(summary.needsYou);
@@ -587,6 +598,15 @@ statusLineGap.addEventListener("input", () => {
 });
 statusLineGap.addEventListener("change", () => {
   savePetPreferences({ statusLineGap: Number(statusLineGap.value) });
+});
+maxFinishedAgents.addEventListener("input", () => {
+  applyPetPreferences({
+    ...preferences,
+    maxFinishedAgents: Number(maxFinishedAgents.value)
+  });
+});
+maxFinishedAgents.addEventListener("change", () => {
+  savePetPreferences({ maxFinishedAgents: Number(maxFinishedAgents.value) });
 });
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;

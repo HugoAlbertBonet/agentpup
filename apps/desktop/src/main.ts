@@ -85,12 +85,20 @@ import {
 import {
   autostartTrayPresentation,
   supportsSystemTray,
-  supportsWindowsAutostart,
+  supportsStartupControl,
   toggleTrayRuntime,
   trayIconSize,
   trayPresentation
 } from "./tray-control.js";
-import { createLoginItemSettings, resolveWslDistro } from "./login-item.js";
+import {
+  configureLinuxAutostart,
+  createLinuxAutostartEntry,
+  createLoginItemSettings,
+  isLinuxAutostartEnabled,
+  linuxAutostartFilePath,
+  resolveLinuxAutostartExecutable,
+  resolveWslDistro
+} from "./login-item.js";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -113,6 +121,7 @@ let currentDisplayId: number | undefined;
 
 let overlay: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let startupEnabled = false;
 let status: StatusState = createStatusState();
 const eventSnapshots = new Map<string, StatusEvent[]>();
 let collectorBridge: CollectorBridge | null = null;
@@ -499,12 +508,8 @@ function petRuntimeRunning(): boolean {
   return overlay !== null && !overlay.isDestroyed();
 }
 
-function windowsAutostartEnabled(): boolean {
-  return process.platform === "win32" && app.getLoginItemSettings().openAtLogin;
-}
-
-function setWindowsAutostart(enabled: boolean): void {
-  const loginItem = createLoginItemSettings({
+function loginItemSettings(enabled: boolean) {
+  return createLoginItemSettings({
     platform: process.platform,
     enabled,
     isPackaged: app.isPackaged,
@@ -512,9 +517,49 @@ function setWindowsAutostart(enabled: boolean): void {
     applicationPath: path.resolve(__dirname, ".."),
     wslDistro: configuredWslDistro
   });
-  if (loginItem === null) return;
-  app.setLoginItemSettings(loginItem);
-  console.info(`[agentpup] Windows autostart ${enabled ? "enabled" : "disabled"}.`);
+}
+
+function linuxAutostartConfiguration(): { filePath: string; entry: string } {
+  const executablePath = resolveLinuxAutostartExecutable(
+    process.execPath,
+    process.env.APPIMAGE
+  );
+  return {
+    filePath: linuxAutostartFilePath(app.getPath("home"), process.env.XDG_CONFIG_HOME),
+    entry: createLinuxAutostartEntry({
+      executablePath,
+      applicationPath: app.isPackaged ? undefined : path.resolve(__dirname, "..")
+    })
+  };
+}
+
+async function readStartupEnabled(): Promise<boolean> {
+  if (process.platform === "linux") {
+    const configuration = linuxAutostartConfiguration();
+    return isLinuxAutostartEnabled(configuration.filePath, configuration.entry);
+  }
+  const loginItem = loginItemSettings(true);
+  if (loginItem === null) return false;
+  if (process.platform === "win32") {
+    if (loginItem.path === undefined || loginItem.args === undefined) return false;
+    return app.getLoginItemSettings({ path: loginItem.path, args: loginItem.args }).openAtLogin;
+  }
+  return app.getLoginItemSettings().openAtLogin;
+}
+
+async function setStartupEnabled(enabled: boolean): Promise<void> {
+  if (process.platform === "linux") {
+    const configuration = linuxAutostartConfiguration();
+    await configureLinuxAutostart(configuration.filePath, configuration.entry, enabled);
+  } else {
+    const loginItem = loginItemSettings(enabled);
+    if (loginItem === null) return;
+    app.setLoginItemSettings(loginItem);
+  }
+  startupEnabled = await readStartupEnabled();
+  console.info(
+    `[agentpup] ${process.platform} login startup ${startupEnabled ? "enabled" : "disabled"}.`
+  );
 }
 
 function updateTrayPresentation(): void {
@@ -526,15 +571,18 @@ function updateTrayPresentation(): void {
       click: () => togglePetFromTray()
     }
   ];
-  if (supportsWindowsAutostart(process.platform)) {
-    const autostart = autostartTrayPresentation(windowsAutostartEnabled());
+  if (supportsStartupControl(process.platform)) {
+    const autostart = autostartTrayPresentation(process.platform, startupEnabled);
     template.push({
       label: autostart.label,
       type: "checkbox",
       checked: autostart.checked,
       click: (menuItem) => {
-        setWindowsAutostart(menuItem.checked);
-        updateTrayPresentation();
+        void setStartupEnabled(menuItem.checked)
+          .catch((error: unknown) => {
+            console.error("[agentpup] Could not update login startup:", error);
+          })
+          .finally(updateTrayPresentation);
       }
     });
   }
@@ -880,7 +928,19 @@ if (!hasLock) {
         ? false
         : undefined;
     if (requestedAutostart !== undefined) {
-      setWindowsAutostart(requestedAutostart);
+      try {
+        await setStartupEnabled(requestedAutostart);
+      } catch (error) {
+        console.error("[agentpup] Could not update login startup:", error);
+        startupEnabled = false;
+      }
+    } else {
+      try {
+        startupEnabled = await readStartupEnabled();
+      } catch (error) {
+        console.error("[agentpup] Could not read login startup:", error);
+        startupEnabled = false;
+      }
     }
     await refreshPetLibrary();
     registerPetProtocol();

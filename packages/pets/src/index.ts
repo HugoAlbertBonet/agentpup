@@ -23,6 +23,8 @@ export {
 } from "./animation.js";
 export {
   defaultPetPreferences,
+  maxFinishedAgentsMaximum,
+  maxFinishedAgentsMinimum,
   normalizePetPreferences,
   petScaleMaximum,
   petScaleMinimum,

@@ -8,8 +8,8 @@ export function trayIconSize(platform: NodeJS.Platform): number {
   return platform === "darwin" ? 22 : 32;
 }
 
-export function supportsWindowsAutostart(platform: NodeJS.Platform): boolean {
-  return platform === "win32";
+export function supportsStartupControl(platform: NodeJS.Platform): boolean {
+  return platform === "win32" || platform === "darwin" || platform === "linux";
 }
 
 export function toggleTrayRuntime(
@@ -34,9 +34,12 @@ export function trayPresentation(running: boolean): {
     : { toggleLabel: "Start AgentPup", tooltip: "AgentPup — stopped" };
 }
 
-export function autostartTrayPresentation(enabled: boolean): {
+export function autostartTrayPresentation(platform: NodeJS.Platform, enabled: boolean): {
   readonly label: string;
   readonly checked: boolean;
 } {
-  return { label: "Start with Windows", checked: enabled };
+  return {
+    label: platform === "win32" ? "Start with Windows" : "Start at login",
+    checked: enabled
+  };
 }

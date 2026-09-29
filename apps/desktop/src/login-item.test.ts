@@ -1,6 +1,18 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { createLoginItemSettings, resolveWslDistro } from "./login-item.js";
+import {
+  createLinuxAutostartEntry,
+  configureLinuxAutostart,
+  createLoginItemSettings,
+  isLinuxAutostartEnabled,
+  linuxAutostartFilePath,
+  resolveLinuxAutostartExecutable,
+  resolveWslDistro
+} from "./login-item.js";
 
 describe("Windows login item", () => {
   it("registers the deployed development app and selected WSL distro", () => {
@@ -20,7 +32,23 @@ describe("Windows login item", () => {
     });
   });
 
-  it("uses the packaged executable directly and ignores unsupported platforms", () => {
+  it("uses the packaged executable directly", () => {
+  });
+
+  it("uses Electron's main app login service on macOS", () => {
+    expect(
+      createLoginItemSettings({
+        platform: "darwin",
+        enabled: true,
+        isPackaged: true,
+        executablePath: "/Applications/AgentPup.app/Contents/MacOS/AgentPup",
+        applicationPath: "ignored",
+        wslDistro: undefined
+      })
+    ).toEqual({ openAtLogin: true });
+  });
+
+  it("leaves Linux startup to the freedesktop autostart adapter", () => {
     expect(
       createLoginItemSettings({
         platform: "win32",
@@ -45,6 +73,53 @@ describe("Windows login item", () => {
         wslDistro: undefined
       })
     ).toBeNull();
+  });
+
+  it("builds a bounded Linux autostart entry using the stable AppImage path", () => {
+    expect(
+      resolveLinuxAutostartExecutable("/tmp/.mount_Agent/agentpup", "/home/me/Agent Pup.AppImage")
+    ).toBe("/home/me/Agent Pup.AppImage");
+    expect(resolveLinuxAutostartExecutable("/usr/bin/agentpup", undefined)).toBe(
+      "/usr/bin/agentpup"
+    );
+    expect(linuxAutostartFilePath("/home/me", undefined)).toBe(
+      "/home/me/.config/autostart/dev.agentpup.desktop"
+    );
+    expect(linuxAutostartFilePath("/home/me", "/custom/config")).toBe(
+      "/custom/config/autostart/dev.agentpup.desktop"
+    );
+
+    expect(
+      createLinuxAutostartEntry({
+        executablePath: "/home/me/Agent Pup.AppImage",
+        applicationPath: undefined
+      })
+    ).toContain('Exec="/home/me/Agent Pup.AppImage"');
+    expect(
+      createLinuxAutostartEntry({
+        executablePath: "/usr/bin/electron",
+        applicationPath: "/home/me/agent$pup"
+      })
+    ).toContain('Exec="/usr/bin/electron" "/home/me/agent\\$pup"');
+  });
+
+  it("atomically enables and removes only AgentPup's Linux autostart file", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "agentpup-autostart-"));
+    const filePath = path.join(root, "autostart", "dev.agentpup.desktop");
+    const entry = createLinuxAutostartEntry({
+      executablePath: "/opt/AgentPup.AppImage",
+      applicationPath: undefined
+    });
+    try {
+      expect(await isLinuxAutostartEnabled(filePath, entry)).toBe(false);
+      await configureLinuxAutostart(filePath, entry, true);
+      expect(await readFile(filePath, "utf8")).toBe(entry);
+      expect(await isLinuxAutostartEnabled(filePath, entry)).toBe(true);
+      await configureLinuxAutostart(filePath, entry, false);
+      expect(await isLinuxAutostartEnabled(filePath, entry)).toBe(false);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it("restores the WSL distro from a login argument", () => {

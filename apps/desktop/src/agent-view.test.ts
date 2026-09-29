@@ -6,6 +6,7 @@ import {
   applyAgentDismissals,
   canDismissAgent,
   dismissAllDismissibleAgents,
+  limitFinishedAgents,
   providerPresentation
 } from "./agent-view.js";
 import { aggregateStatus, createStatusState, type AgentStatus } from "../../../packages/status/src/index.js";
@@ -109,5 +110,32 @@ describe("agent activity presentation", () => {
       "waiting",
       "working"
     ]);
+  });
+
+  it("keeps only the most recently observed finished results", () => {
+    const state = createStatusState();
+    state.agents.oldest = agent({
+      lastObservedAt: "2026-09-28T02:00:00.000Z",
+      activityUpdatedSequence: 9
+    });
+    state.agents.middle = agent({
+      lastObservedAt: "2026-09-28T02:01:00.000Z",
+      activityUpdatedSequence: 10
+    });
+    state.agents.newest = agent({
+      lastObservedAt: "2026-09-28T02:02:00.000Z",
+      activityUpdatedSequence: 11
+    });
+    state.agents.working = agent({
+      activity: "working",
+      resultReady: false,
+      lastObservedAt: "2026-09-28T01:00:00.000Z"
+    });
+
+    const visible = limitFinishedAgents(state, 2);
+
+    expect(Object.keys(visible.agents).sort()).toEqual(["middle", "newest", "working"]);
+    expect(aggregateStatus(visible)).toMatchObject({ resultsReady: 2, working: 1 });
+    expect(Object.keys(limitFinishedAgents(state, 0).agents)).toEqual(["working"]);
   });
 });
