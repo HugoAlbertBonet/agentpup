@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 27 test files and 116 tests passed, followed by a successful build
+- Latest full npm run check: 27 test files and 121 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -204,7 +204,11 @@ lifecycle structure or aggregate counts.
   and platform-specific identities are implemented and covered by automated
   tests. The desktop host now also creates a platform-sized tray controller on
   both systems with stop/start and quit actions; the Windows-only startup item
-  is omitted. Native CI packaging passes; installed-app launch and real-desktop
+  is omitted. Linux runtime diagnostics and policies now distinguish X11,
+  native Wayland, WSLg, and an unknown backend. Native Wayland is explicitly
+  limited because Electron does not support the required positioning, movement,
+  or always-on-top APIs there; X11/Xwayland is the current implementation
+  target. Native CI packaging passes; installed-app launch and real-desktop
   overlay/tray behavior have not yet been measured on those platforms.
 - The WSL-to-Windows development launcher now terminates the previous Electron
   process tree and waits for all runtime children before relaunching. The
@@ -215,8 +219,11 @@ lifecycle structure or aggregate counts.
   reported zero legacy main processes and exactly one AgentPup main process.
 - The Windows tray icon now stops the overlay and collector runtime instead of
   hiding the window. Its controller remains available in the tray so the next
-  click creates a new overlay and collector; full-process **Quit AgentPup**
-  remains a separate menu action.
+  click creates a new overlay and collector at the default bottom-right corner
+  of the primary display; full-process **Quit AgentPup** remains a separate menu
+  action. The user observed that the previous implementation retained the last
+  selected corner, which established that the controller process persisted;
+  the corner reset now has automated coverage and awaits manual revalidation.
 
 - A true mixed-DPI multi-display setup, negative desktop coordinates, taskbars
   on non-default edges, monitor unplug/replug, and moving the host between displays

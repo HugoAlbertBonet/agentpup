@@ -38,6 +38,8 @@ import {
   type CollectorBridge
 } from "./collector-bridge.js";
 import {
+  detectOverlayRuntime,
+  getDefaultCorner,
   getCornerPosition,
   getNextCorner,
   getOverlayWindowPolicy,
@@ -100,17 +102,13 @@ protocol.registerSchemesAsPrivileged([
 const WINDOW_WIDTH = 460;
 const WINDOW_HEIGHT = 680;
 const WINDOW_MARGIN = 16;
-const runtime: OverlayRuntime =
-  process.platform === "linux" &&
-  (process.env.WSL_DISTRO_NAME !== undefined || process.env.WSL_INTEROP !== undefined)
-    ? "wslg"
-    : "native";
+const runtime: OverlayRuntime = detectOverlayRuntime(process.platform, process.env, process.argv);
 const roamingEnabled = isRoamingEnabled(process.argv);
 const configuredWslDistro = resolveWslDistro(
   process.argv,
   process.env.AGENTPUP_WSL_DISTRO ?? process.env.CLAUDEPET_WSL_DISTRO
 );
-let currentCorner: OverlayCorner = runtime === "wslg" ? "top-right" : "bottom-right";
+let currentCorner: OverlayCorner = getDefaultCorner(runtime);
 let currentDisplayId: number | undefined;
 
 let overlay: BrowserWindow | null = null;
@@ -491,6 +489,7 @@ function placeOverlay(window: BrowserWindow, display: Display): void {
 
 function ensureTopmost(window: BrowserWindow): void {
   if (window.isDestroyed()) return;
+  if (!getOverlayWindowPolicy(runtime).alwaysOnTopSupported) return;
   if (process.platform === "win32") window.setAlwaysOnTop(true, "screen-saver");
   else window.setAlwaysOnTop(true);
   window.moveTop();
@@ -558,14 +557,19 @@ function stopPetRuntime(): void {
   overlay = null;
 }
 
-function startPetRuntime(): void {
+function startPetRuntime(resetPlacement = false): void {
   if (petRuntimeRunning()) return;
+  if (resetPlacement) {
+    currentCorner = getDefaultCorner(runtime);
+    currentDisplayId = undefined;
+    roamingTarget = null;
+  }
   overlay = createOverlay();
   startLiveCollector();
 }
 
 function togglePetFromTray(): void {
-  toggleTrayRuntime(petRuntimeRunning(), startPetRuntime, stopPetRuntime);
+  toggleTrayRuntime(petRuntimeRunning(), () => startPetRuntime(true), stopPetRuntime);
   updateTrayPresentation();
 }
 
@@ -640,7 +644,7 @@ function createOverlay(): BrowserWindow {
     maximizable: false,
     fullscreenable: false,
     focusable: windowPolicy.focusable,
-    alwaysOnTop: true,
+    alwaysOnTop: windowPolicy.alwaysOnTopSupported,
     skipTaskbar: windowPolicy.skipTaskbar,
     ...(windowPolicy.windowType === undefined ? {} : { type: windowPolicy.windowType }),
     webPreferences: {
@@ -653,7 +657,7 @@ function createOverlay(): BrowserWindow {
   });
 
   placeOverlay(window, screen.getPrimaryDisplay());
-  if (runtime === "native") window.setIgnoreMouseEvents(true, { forward: true });
+  if (windowPolicy.clickThrough) window.setIgnoreMouseEvents(true, { forward: true });
   else window.setIgnoreMouseEvents(false);
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (navigationEvent) => navigationEvent.preventDefault());
@@ -827,7 +831,7 @@ function registerIpc(): void {
   ipcMain.on("overlay:set-interactive", (event, interactive: unknown) => {
     if (event.sender !== overlay?.webContents || typeof interactive !== "boolean") return;
     interactionActive = interactive;
-    if (runtime === "native") {
+    if (getOverlayWindowPolicy(runtime).clickThrough) {
       overlay.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true });
     }
   });
@@ -862,6 +866,14 @@ if (!hasLock) {
   });
   app.whenReady().then(async () => {
     if (process.platform === "win32") app.setAppUserModelId("dev.agentpup.desktop");
+    if (runtime === "linux-wayland") {
+      console.warn(
+        "[agentpup] Native Wayland cannot guarantee overlay position or always-on-top behavior. " +
+          "Launch with --ozone-platform=x11 to use the current X11/Xwayland path."
+      );
+    } else if (runtime === "linux-unknown") {
+      console.warn("[agentpup] Could not identify the Linux display backend; overlay guarantees are limited.");
+    }
     const requestedAutostart = process.argv.includes("--enable-autostart")
       ? true
       : process.argv.includes("--disable-autostart")

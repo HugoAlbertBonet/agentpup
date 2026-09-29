@@ -1,4 +1,9 @@
-export type OverlayRuntime = "native" | "wslg";
+export type OverlayRuntime =
+  | "native"
+  | "wslg"
+  | "linux-x11"
+  | "linux-wayland"
+  | "linux-unknown";
 
 export interface Rectangle {
   x: number;
@@ -13,6 +18,8 @@ export interface Size {
 }
 
 export interface OverlayWindowPolicy {
+  alwaysOnTopSupported: boolean;
+  clickThrough: boolean;
   focusable: boolean;
   skipTaskbar: boolean;
   windowType: "notification" | undefined;
@@ -37,10 +44,59 @@ const cornerOrder: readonly OverlayCorner[] = [
   "bottom-left"
 ];
 
+export function detectOverlayRuntime(
+  platform: NodeJS.Platform,
+  environment: Readonly<Record<string, string | undefined>>,
+  commandLine: readonly string[] = []
+): OverlayRuntime {
+  if (platform !== "linux") return "native";
+  if (environment.WSL_DISTRO_NAME !== undefined || environment.WSL_INTEROP !== undefined) {
+    return "wslg";
+  }
+
+  const ozonePlatform = commandLine
+    .find((argument) => argument.startsWith("--ozone-platform="))
+    ?.slice("--ozone-platform=".length)
+    .toLowerCase();
+  if (ozonePlatform === "x11") return "linux-x11";
+  if (ozonePlatform === "wayland") return "linux-wayland";
+
+  const sessionType = environment.XDG_SESSION_TYPE?.toLowerCase();
+  if (sessionType === "wayland" || environment.WAYLAND_DISPLAY) return "linux-wayland";
+  if (sessionType === "x11" || environment.DISPLAY) return "linux-x11";
+  return "linux-unknown";
+}
+
+export function getDefaultCorner(runtime: OverlayRuntime): OverlayCorner {
+  return runtime === "wslg" ? "top-right" : "bottom-right";
+}
+
 export function getOverlayWindowPolicy(runtime: OverlayRuntime): OverlayWindowPolicy {
-  return runtime === "wslg"
-    ? { focusable: true, skipTaskbar: true, windowType: "notification" }
-    : { focusable: false, skipTaskbar: true, windowType: undefined };
+  if (runtime === "native") {
+    return {
+      alwaysOnTopSupported: true,
+      clickThrough: true,
+      focusable: false,
+      skipTaskbar: true,
+      windowType: undefined
+    };
+  }
+  if (runtime === "wslg") {
+    return {
+      alwaysOnTopSupported: false,
+      clickThrough: false,
+      focusable: true,
+      skipTaskbar: true,
+      windowType: "notification"
+    };
+  }
+  return {
+    alwaysOnTopSupported: runtime === "linux-x11",
+    clickThrough: false,
+    focusable: false,
+    skipTaskbar: true,
+    windowType: "notification"
+  };
 }
 
 export function getOverlayPosition(
@@ -52,7 +108,7 @@ export function getOverlayPosition(
   return getCornerPosition(
     workArea,
     windowSize,
-    runtime === "wslg" ? "top-right" : "bottom-right",
+    getDefaultCorner(runtime),
     margin
   );
 }

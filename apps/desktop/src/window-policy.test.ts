@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  detectOverlayRuntime,
+  getDefaultCorner,
   getCornerPosition,
   getNextCorner,
   getOverlayPosition,
@@ -11,8 +13,43 @@ import {
 const workArea = { x: 0, y: 0, width: 1920, height: 1080 };
 
 describe("overlay window policy", () => {
+  it("detects WSLg before the underlying Linux display backend", () => {
+    expect(
+      detectOverlayRuntime("linux", {
+        WSL_DISTRO_NAME: "Ubuntu",
+        WAYLAND_DISPLAY: "wayland-0"
+      })
+    ).toBe("wslg");
+  });
+
+  it("distinguishes native Linux X11, Wayland, and unknown sessions", () => {
+    expect(detectOverlayRuntime("linux", { XDG_SESSION_TYPE: "x11" })).toBe("linux-x11");
+    expect(detectOverlayRuntime("linux", { WAYLAND_DISPLAY: "wayland-0" })).toBe(
+      "linux-wayland"
+    );
+    expect(detectOverlayRuntime("linux", {})).toBe("linux-unknown");
+    expect(detectOverlayRuntime("darwin", { XDG_SESSION_TYPE: "wayland" })).toBe("native");
+    expect(
+      detectOverlayRuntime(
+        "linux",
+        { XDG_SESSION_TYPE: "wayland" },
+        ["agentpup", "--ozone-platform=x11"]
+      )
+    ).toBe("linux-x11");
+  });
+
+  it("resets every normal desktop runtime to the bottom-right corner", () => {
+    expect(getDefaultCorner("native")).toBe("bottom-right");
+    expect(getDefaultCorner("linux-x11")).toBe("bottom-right");
+    expect(getDefaultCorner("linux-wayland")).toBe("bottom-right");
+    expect(getDefaultCorner("linux-unknown")).toBe("bottom-right");
+    expect(getDefaultCorner("wslg")).toBe("top-right");
+  });
+
   it("keeps the native overlay out of the taskbar and away from focus", () => {
     expect(getOverlayWindowPolicy("native")).toEqual({
+      alwaysOnTopSupported: true,
+      clickThrough: true,
       focusable: false,
       skipTaskbar: true,
       windowType: undefined
@@ -25,6 +62,8 @@ describe("overlay window policy", () => {
 
   it("surfaces the WSLg preview as a regular top-right window", () => {
     expect(getOverlayWindowPolicy("wslg")).toEqual({
+      alwaysOnTopSupported: false,
+      clickThrough: false,
       focusable: true,
       skipTaskbar: true,
       windowType: "notification"
@@ -33,6 +72,29 @@ describe("overlay window policy", () => {
       x: 1444,
       y: 16
     });
+  });
+
+  it("uses an X11 notification window for the current Linux positioning path", () => {
+    expect(getOverlayWindowPolicy("linux-x11")).toEqual({
+      alwaysOnTopSupported: true,
+      clickThrough: false,
+      focusable: false,
+      skipTaskbar: true,
+      windowType: "notification"
+    });
+  });
+
+  it("does not promise unsupported topmost or selective click-through behavior on Wayland", () => {
+    expect(getOverlayWindowPolicy("linux-wayland")).toEqual({
+      alwaysOnTopSupported: false,
+      clickThrough: false,
+      focusable: false,
+      skipTaskbar: true,
+      windowType: "notification"
+    });
+    expect(getOverlayWindowPolicy("linux-unknown")).toEqual(
+      getOverlayWindowPolicy("linux-wayland")
+    );
   });
 
   it("cycles clockwise through safe display corners", () => {

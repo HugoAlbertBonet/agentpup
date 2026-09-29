@@ -88,8 +88,9 @@ Installed Windows builds also provide a **Start with Windows** checkbox in the
 tray menu; it does not require Node.js or the source checkout. On Windows,
 macOS, and Linux, clicking the tray icon stops the pet window and collector
 while retaining the small controller; clicking it again starts a fresh pet
-runtime. Native macOS and Linux tray behavior remains experimental until it is
-checked on real desktops.
+runtime at the default bottom-right corner of the primary display. Native macOS
+and Linux tray behavior remains experimental until it is checked on real
+desktops.
 
 ## Pet designs
 
@@ -136,6 +137,15 @@ Both packages run the bundled local collector through Electron and do not
 require a separate Node.js installation. These artifacts are experimental until
 their overlay, tray, focus, fullscreen, and compositor behavior is validated on
 real macOS, Linux X11, and supported Wayland desktops.
+
+On Linux, diagnostics distinguish X11, native Wayland, WSLg, and an unknown
+display backend. X11 is the current overlay target. Electron does not support
+programmatic positioning, moving, or always-on-top windows on native Wayland,
+so that mode is reported as limited rather than presented as equivalent. On a
+Wayland desktop with Xwayland installed, launch AgentPup with
+`--ozone-platform=x11` to select the current positioning path. Selective
+transparent-area click-through on Linux still requires a platform-specific
+implementation and real-desktop validation.
 
 Before publishing a final release, follow the
 [clean-machine Windows checklist](docs/WINDOWS_RELEASE_CHECKLIST.md).
