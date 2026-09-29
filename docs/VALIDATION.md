@@ -249,6 +249,16 @@ lifecycle structure or aggregate counts.
   new report-path unit test used a POSIX absolute path on the Windows runner.
   The test now constructs its input with the host path module; a corrected
   native Windows run remains required.
+- Release candidate 19 passed the macOS/Linux workflow (run 36528032023),
+  repeating both packaged desktop acceptance checks after the test-path fix.
+  The unsigned macOS ZIP is 132,427,918 bytes with digest
+  `sha256:c269c782424fba6e837b7a53764fa2cd96c6a0a7f6b83a4ecdabf7d4554be7a6`;
+  the Linux AppImage is 128,495,038 bytes with digest
+  `sha256:e8c73e97cc431767539036643ec73cd948d398792761d535619a8c64ecaf3c60`.
+  The Windows workflow (run 36528032066) passed all 150 tests, NSIS
+  verification, clean install, installed-app launch, shutdown, uninstall, and
+  upload. Its artifact is 114,884,638 bytes with digest
+  `sha256:5aaa316f4fe8b24974e3e749b3035dd34aa150fcc09cc91bd176a6367f1062e7`.
 
 ## Still requiring manual or release validation
 
