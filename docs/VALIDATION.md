@@ -415,9 +415,9 @@ The original default AgentPup design is now complete. Cross-platform packaged
 policy checks are automated, while physical macOS/Linux desktop acceptance
 remains unavailable in the current environment.
 
-1. Add source-to-first-painted-badge instrumentation and profile the active
-   working animation's measured CPU cost; GPU, battery, and long-duration
-   stability remain unavailable in the current harness.
+1. Extend the measured renderer paint-ready leg to provider-source ingestion and
+   OS compositor visibility; GPU, battery, and long-duration stability remain
+   unavailable in the current harness.
 2. Finish the remaining Windows autostart-after-reboot and packaged interactive
    checks using a current CI-verified NSIS artifact.
 3. Run physical macOS, Linux X11, and supported Wayland desktop acceptance when
@@ -433,13 +433,20 @@ remains unavailable in the current environment.
   Electron 44.4.5, settled idle CPU measured 0.16% of one core with animations
   enabled and 0.31% with animations disabled. Both pass the initial under-1%
   resting target; the difference is within short-sample noise.
-- The active working animation measured 17.02% of one core. This is outside the
-  resting target's scope but is material and remains an optimization candidate.
+- The active working animation initially measured 17.02% of one core. Replacing
+  continuously sampled CSS animation with discrete visible-frame updates reduced
+  the isolated synthetic-working workload to 6.09%, an approximately 64%
+  reduction from the initial baseline. Hidden Settings preview timers now stop
+  outside the Settings view.
 - Native Electron process-group RSS/private memory measured 400,941,056 /
   247,619,584 bytes at settled idle with animations enabled, and 456,712,192 /
   271,654,912 bytes during the working animation.
 - Synthetic reducer p95 was 0.003 ms, hook-helper process startup p95 was
   28.439 ms, and cold collector first-snapshot p95 was 133.507 ms. Helper
   startup is intentionally separate from direct/persistent observer time.
-- GPU, battery, long-duration stability, and first-painted-badge latency remain
-  unmeasured and are not inferred from these results.
+- The one-command native Windows paint benchmark measured 11.261 ms p95 across
+  24 transitions from main-process send through two renderer animation frames.
+  It automatically restores normal collection. This does not measure Windows
+  compositor scheduling or physical scanout.
+- GPU, battery, long-duration stability, end-to-end provider-source latency, and
+  compositor-visible latency remain unmeasured and are not inferred.

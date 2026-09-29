@@ -71,6 +71,19 @@ const benchmarkArgument = process.argv.includes("--benchmark-animations=off")
 const benchmarkIdleArgument = process.argv.includes("--benchmark-idle")
   ? "--benchmark-idle"
   : "";
+const benchmarkWorkingArgument = process.argv.includes("--benchmark-working")
+  ? "--benchmark-working"
+  : "";
+const paintReportValue = process.argv
+  .find((argument) => argument.startsWith("--paint-benchmark-report="))
+  ?.slice("--paint-benchmark-report=".length);
+if (paintReportValue !== undefined && !path.isAbsolute(paintReportValue)) {
+  console.error("The paint benchmark report path must be absolute.");
+  process.exit(1);
+}
+const paintBenchmarkArgument = paintReportValue === undefined
+  ? ""
+  : `--paint-benchmark-report=${toWindowsPath(paintReportValue)}`;
 const forwardedVariables = [
   "AGENTPUP_WINDOWS_ARCHIVE",
   "AGENTPUP_WINDOWS_SOURCE",
@@ -79,6 +92,8 @@ const forwardedVariables = [
   "AGENTPUP_AUTOSTART_ARGUMENT",
   "AGENTPUP_BENCHMARK_ARGUMENT",
   "AGENTPUP_BENCHMARK_IDLE_ARGUMENT",
+  "AGENTPUP_BENCHMARK_WORKING_ARGUMENT",
+  "AGENTPUP_PAINT_BENCHMARK_ARGUMENT",
   "AGENTPUP_WSL_COLLECTOR_PATH",
   "AGENTPUP_WSL_INTEGRATION_PATH",
   "AGENTPUP_WSL_DISTRO"
@@ -93,6 +108,8 @@ $appArgument = $env:AGENTPUP_APP_ARGUMENT
 $autostartArgument = $env:AGENTPUP_AUTOSTART_ARGUMENT
 $benchmarkArgument = $env:AGENTPUP_BENCHMARK_ARGUMENT
 $benchmarkIdleArgument = $env:AGENTPUP_BENCHMARK_IDLE_ARGUMENT
+$benchmarkWorkingArgument = $env:AGENTPUP_BENCHMARK_WORKING_ARGUMENT
+$paintBenchmarkArgument = $env:AGENTPUP_PAINT_BENCHMARK_ARGUMENT
 $developmentRoot = Join-Path $env:LOCALAPPDATA "AgentPup\development"
 $legacyDevelopmentRoot = Join-Path $env:LOCALAPPDATA "Claudepet\development"
 $runtimeRoot = Join-Path $developmentRoot ("electron-" + $electronVersion)
@@ -143,6 +160,8 @@ if ($appArgument) { $arguments += $appArgument }
 if ($autostartArgument) { $arguments += $autostartArgument }
 if ($benchmarkArgument) { $arguments += $benchmarkArgument }
 if ($benchmarkIdleArgument) { $arguments += $benchmarkIdleArgument }
+if ($benchmarkWorkingArgument) { $arguments += $benchmarkWorkingArgument }
+if ($paintBenchmarkArgument) { $arguments += $paintBenchmarkArgument }
 Start-Process -FilePath (Join-Path $runtimeRoot "electron.exe") -ArgumentList $arguments
 Write-Output "AgentPup started as a native Windows development app."
 `;
@@ -175,6 +194,8 @@ const child = spawn(
       AGENTPUP_AUTOSTART_ARGUMENT: autostartArgument,
       AGENTPUP_BENCHMARK_ARGUMENT: benchmarkArgument,
       AGENTPUP_BENCHMARK_IDLE_ARGUMENT: benchmarkIdleArgument,
+      AGENTPUP_BENCHMARK_WORKING_ARGUMENT: benchmarkWorkingArgument,
+      AGENTPUP_PAINT_BENCHMARK_ARGUMENT: paintBenchmarkArgument,
       AGENTPUP_WSL_COLLECTOR_PATH: path.join(root, "dist", "collector.cjs"),
       AGENTPUP_WSL_INTEGRATION_PATH: path.join(root, "dist", "integration.cjs"),
       AGENTPUP_WSL_DISTRO: process.env.WSL_DISTRO_NAME,

@@ -33,6 +33,11 @@ export interface StartupPreference {
   readonly enabled: boolean;
 }
 
+export interface PaintBenchmarkRequest {
+  readonly id: string;
+  readonly status: StatusState;
+}
+
 export interface ClaudepetApi {
   getStatus(): Promise<StatusState>;
   onStatus(callback: (status: StatusState) => void): void;
@@ -57,6 +62,8 @@ export interface ClaudepetApi {
   setWindowShape(rectangles: readonly Rectangle[]): void;
   setInteractive(interactive: boolean): void;
   setPanelOpen(open: boolean): void;
+  onPaintBenchmark(callback: (request: PaintBenchmarkRequest) => void): void;
+  acknowledgePaintBenchmark(id: string): void;
 }
 
 const api: ClaudepetApi = {
@@ -103,7 +110,11 @@ const api: ClaudepetApi = {
   },
   setWindowShape: (rectangles) => ipcRenderer.send("overlay:set-shape", rectangles),
   setInteractive: (interactive) => ipcRenderer.send("overlay:set-interactive", interactive),
-  setPanelOpen: (open) => ipcRenderer.send("overlay:set-panel-open", open)
+  setPanelOpen: (open) => ipcRenderer.send("overlay:set-panel-open", open),
+  onPaintBenchmark: (callback) => {
+    ipcRenderer.on("benchmark:paint", (_event, request: PaintBenchmarkRequest) => callback(request));
+  },
+  acknowledgePaintBenchmark: (id) => ipcRenderer.send("benchmark:paint-ack", id)
 };
 
 contextBridge.exposeInMainWorld("claudepet", api);

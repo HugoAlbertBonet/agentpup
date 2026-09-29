@@ -179,10 +179,6 @@ button {
 .pet-sprite {
   --pet-scale: 0.6667;
   --sprite-row-y: 0px;
-  --sprite-end-x: -1152px;
-  --sprite-frames: 6;
-  --sprite-duration: 5500ms;
-  --sprite-iterations: infinite;
   position: absolute;
   left: 0;
   bottom: 0;
@@ -192,8 +188,6 @@ button {
   background-position: 0 var(--sprite-row-y);
   background-repeat: no-repeat;
   background-size: 1536px 2288px;
-  animation: pet-frames var(--sprite-duration) steps(var(--sprite-frames)) var(--sprite-iterations);
-  animation-fill-mode: none;
   transform: scale(var(--pet-scale));
   transform-origin: left bottom;
 }
@@ -784,11 +778,6 @@ button {
 .agent-clear:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 1px;
-}
-
-@keyframes pet-frames {
-  from { background-position: 0 var(--sprite-row-y); }
-  to { background-position: var(--sprite-end-x) var(--sprite-row-y); }
 }
 
 @media (prefers-reduced-motion: reduce) {

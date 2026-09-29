@@ -2,6 +2,7 @@ import path from "node:path";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import os from "node:os";
 import { spawn, spawnSync } from "node:child_process";
+import { performance } from "node:perf_hooks";
 
 import {
   app,
@@ -101,6 +102,13 @@ import {
   resolveLinuxAutostartExecutable,
   resolveWslDistro
 } from "./login-item.js";
+import { summarizeSamples } from "../../../packages/performance/src/index.js";
+import { createReducerEvents } from "../../../packages/performance/src/benchmark.js";
+import {
+  PaintLatencyTracker,
+  createPaintBenchmarkStates,
+  paintBenchmarkReportPath
+} from "../../../packages/performance/src/paint.js";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -115,6 +123,7 @@ const WINDOW_MARGIN = 16;
 const runtime: OverlayRuntime = detectOverlayRuntime(process.platform, process.env, process.argv);
 const roamingEnabled = isRoamingEnabled(process.argv);
 const acceptanceReportPath = desktopAcceptanceReportPath(process.argv);
+const paintReportPath = paintBenchmarkReportPath(process.argv);
 const configuredWslDistro = resolveWslDistro(
   process.argv,
   process.env.AGENTPUP_WSL_DISTRO ?? process.env.CLAUDEPET_WSL_DISTRO
@@ -142,6 +151,11 @@ let installedPets: readonly InstalledPet[] = [];
 let selectedPetId = builtInPetId;
 let petPreferences: PetPreferences = defaultPetPreferences;
 let petSettingsWriteQueue: Promise<void> = Promise.resolve();
+const paintTracker = new PaintLatencyTracker();
+const paintStates = createPaintBenchmarkStates();
+const paintLatencies: number[] = [];
+let nextPaintSample = 0;
+const paintSampleCount = 24;
 
 interface PetPresentation {
   readonly id: string;
@@ -269,6 +283,33 @@ function publishStatus(): void {
   if (overlay !== null && !overlay.isDestroyed()) {
     overlay.webContents.send("status:changed", status);
   }
+}
+
+function sendPaintBenchmarkSample(): void {
+  if (paintReportPath === undefined || overlay === null || overlay.isDestroyed()) return;
+  const id = `paint-${nextPaintSample}`;
+  const sampleState = paintStates[nextPaintSample % paintStates.length]!;
+  nextPaintSample += 1;
+  paintTracker.sent(id, performance.now());
+  overlay.webContents.send("benchmark:paint", { id, status: sampleState });
+}
+
+async function writePaintBenchmarkReport(): Promise<void> {
+  if (paintReportPath === undefined) return;
+  const report = {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    platform: process.platform,
+    metric: "main-send-to-renderer-double-request-animation-frame",
+    samples: summarizeSamples(paintLatencies),
+    limitation:
+      "The acknowledgement follows two renderer animation frames; OS compositor and display scanout are outside this measurement."
+  };
+  await mkdir(path.dirname(paintReportPath), { recursive: true });
+  await writeFile(paintReportPath, `${JSON.stringify(report, null, 2)}\n`, {
+    encoding: "utf8",
+    mode: 0o600
+  });
 }
 
 function diagnosticsSnapshot(): DiagnosticsSnapshot {
@@ -426,7 +467,11 @@ async function changeIntegration(
 }
 
 function startLiveCollector(): void {
-  if (process.argv.includes("--demo") || process.argv.includes("--benchmark-idle")) return;
+  if (
+    process.argv.includes("--demo") ||
+    process.argv.includes("--benchmark-idle") ||
+    process.argv.includes("--benchmark-working")
+  ) return;
   const source = process.platform === "win32" ? "wsl-live" : `native-${process.platform}`;
   const collectorPath = runtimeScriptPath(
     "collector.cjs",
@@ -782,6 +827,8 @@ function createOverlay(): BrowserWindow {
       console.info("[agentpup] WSLg preview shown at the top-right of the desktop.");
     }
 
+    if (paintReportPath !== undefined) setTimeout(sendPaintBenchmarkSample, 500);
+
     const captureArgument = process.argv.find((argument) => argument.startsWith("--capture="));
     const capturePath = captureArgument?.slice("--capture=".length);
     if (capturePath !== undefined && capturePath.length > 0) {
@@ -818,6 +865,22 @@ function createOverlay(): BrowserWindow {
 }
 
 function registerIpc(): void {
+  if (paintReportPath !== undefined) {
+    ipcMain.on("benchmark:paint-ack", (event, id: unknown) => {
+      if (event.sender !== overlay?.webContents || typeof id !== "string") return;
+      const latency = paintTracker.acknowledged(id, performance.now());
+      if (latency === null) return;
+      paintLatencies.push(latency);
+      if (paintLatencies.length >= paintSampleCount) {
+        void writePaintBenchmarkReport().catch((error: unknown) => {
+          console.error("[agentpup] Could not write paint benchmark report:", error);
+        });
+      } else {
+        setTimeout(sendPaintBenchmarkSample, 50);
+      }
+    });
+  }
+
   ipcMain.handle("status:get", (event) => {
     if (event.sender !== overlay?.webContents) throw new Error("Untrusted status request");
     return status;
@@ -970,6 +1033,7 @@ function registerIpc(): void {
 
 async function loadInitialEvents(): Promise<StatusEvent[]> {
   if (process.argv.includes("--benchmark-idle")) return [];
+  if (process.argv.includes("--benchmark-working")) return createReducerEvents().slice(0, 2);
   if (process.argv.includes("--demo")) return createDemoEvents();
 
   const userHome = os.homedir();

@@ -8,5 +8,11 @@ describe("performance comparison mode", () => {
     expect(main).toContain('process.argv.includes("--benchmark-animations=off")');
     expect(main).toContain("petPreferences = { ...petPreferences, animationsEnabled: false }");
     expect(main).toContain('process.argv.includes("--benchmark-idle")');
+    expect(main).toContain('process.argv.includes("--benchmark-working")');
+    expect(main).toContain('ipcMain.on("benchmark:paint-ack"');
+
+    const renderer = await readFile(new URL("./renderer.ts", import.meta.url), "utf8");
+    expect(renderer).toContain("onPaintBenchmark");
+    expect(renderer).toMatch(/requestAnimationFrame\(\(\) =>\s*requestAnimationFrame/s);
   });
 });

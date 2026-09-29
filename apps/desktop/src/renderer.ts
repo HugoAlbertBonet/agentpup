@@ -9,6 +9,11 @@ import {
   resolvePetVisualState,
   type PetVisualState
 } from "../../../packages/pets/src/animation.js";
+import {
+  advanceAnimationCursor,
+  animationFrameDelay,
+  type AnimationCursor
+} from "../../../packages/pets/src/frame-player.js";
 import type { PetPreferences, PetPreferencesPatch } from "../../../packages/pets/src/preferences.js";
 import type { ClaudepetApi, PetPresentation, StartupPreference } from "./preload.js";
 import type { OverlayCorner, Rectangle } from "./window-policy.js";
@@ -116,6 +121,7 @@ let preferences: PetPreferences = {
 };
 
 let shapeFrame: number | null = null;
+const spriteTimers = new Map<HTMLElement, number>();
 
 function visibleRectangle(element: HTMLElement): Rectangle | null {
   const bounds = element.getBoundingClientRect();
@@ -153,19 +159,39 @@ function configureSpriteAnimation(
 ): void {
   const animation = resolvePetAnimation(state);
   target.style.setProperty("--sprite-row-y", `${-animation.row * 208}px`);
-  target.style.setProperty("--sprite-end-x", `${-animation.frames * 192}px`);
-  target.style.setProperty("--sprite-frames", String(animation.frames));
-  target.style.setProperty("--sprite-duration", `${animation.durationMs}ms`);
-  target.style.setProperty(
-    "--sprite-iterations",
-    preview ? "infinite" : String(animation.iterations)
-  );
-  target.style.animationName = "none";
-  void target.offsetWidth;
-  target.style.animationName = "";
+  stopSpriteAnimation(target);
+  target.style.backgroundPosition = `0px ${-animation.row * 208}px`;
+  if (!preferences.animationsEnabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+
+  const playback = preview ? { ...animation, iterations: "infinite" as const } : animation;
+  let cursor: AnimationCursor = { frame: 0, iteration: 0 };
+  const advance = (): void => {
+    const next = advanceAnimationCursor(cursor, playback);
+    if (next === null) {
+      target.style.backgroundPosition = `0px ${-animation.row * 208}px`;
+      spriteTimers.delete(target);
+      return;
+    }
+    cursor = next;
+    target.style.backgroundPosition = `${-cursor.frame * 192}px ${-animation.row * 208}px`;
+    spriteTimers.set(target, window.setTimeout(advance, animationFrameDelay(playback)));
+  };
+  spriteTimers.set(target, window.setTimeout(advance, animationFrameDelay(playback)));
+}
+
+function stopSpriteAnimation(target: HTMLElement): void {
+  const timer = spriteTimers.get(target);
+  if (timer !== undefined) window.clearTimeout(timer);
+  spriteTimers.delete(target);
 }
 
 function applyPreviewAnimations(): void {
+  if (panelView !== "settings") {
+    for (const previewSprite of previewSprites) stopSpriteAnimation(previewSprite);
+    return;
+  }
   for (const previewSprite of previewSprites) {
     const state = previewSprite.dataset.previewState as PetVisualState;
     configureSpriteAnimation(previewSprite, state, true);
@@ -242,6 +268,11 @@ function applyPetPreferences(next: PetPreferences, restartAnimation = false): vo
   if (next.animationsEnabled && (animationsChanged || restartAnimation)) {
     applyPetAnimation(visualState, true);
     applyPreviewAnimations();
+  } else if (!next.animationsEnabled && animationsChanged) {
+    configureSpriteAnimation(sprite, visualState, false);
+    for (const previewSprite of previewSprites) {
+      configureSpriteAnimation(previewSprite, previewSprite.dataset.previewState as PetVisualState, true);
+    }
   }
   if (currentStatus !== null) render(currentStatus);
   scheduleWindowShape();
@@ -262,7 +293,7 @@ function showPanelView(view: "activity" | "settings" | "diagnostics" | "integrat
         : view === "diagnostics"
           ? "Diagnostics"
       : "Agent integrations";
-  if (view === "settings" && preferences.animationsEnabled) applyPreviewAnimations();
+  applyPreviewAnimations();
   panel.setAttribute(
     "aria-label",
     view === "activity"
@@ -710,6 +741,12 @@ window.claudepet
     readyCount.textContent = "?";
   });
 window.claudepet.onStatus(render);
+window.claudepet.onPaintBenchmark((request) => {
+  render(request.status);
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => window.claudepet.acknowledgePaintBenchmark(request.id))
+  );
+});
 
 window.claudepet.getCurrentPet().then(showPet).catch(() => {
   petMessage.textContent = "Could not load the selected pet.";

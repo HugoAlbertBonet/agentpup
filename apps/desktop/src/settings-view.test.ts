@@ -58,6 +58,8 @@ describe("pet settings view", () => {
 
     expect(renderer).toContain('querySelectorAll<HTMLElement>("[data-preview-state]")');
     expect(renderer).toContain("resolvePetAnimation(state)");
+    expect(renderer).toContain('if (panelView !== "settings")');
+    expect(renderer).toContain("stopSpriteAnimation(previewSprite)");
     expect(css).toContain(".animation-preview-grid");
     expect(css).toContain(".animation-preview-frame");
   });

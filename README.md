@@ -116,7 +116,9 @@ AgentPup accepts OpenPets V1 and V2 packs containing `pet.json` and `spritesheet
 The privacy-safe Windows/WSL performance harness is documented in
 [docs/PERFORMANCE.md](docs/PERFORMANCE.md). With the native development pet
 running, `npm run benchmark -- --label=current` reports aggregate reducer, hook
-startup, collector startup, CPU, and memory measurements.
+startup, collector startup, CPU, and memory measurements. Run
+`npm run benchmark:paint:windows` for the isolated badge-renderer path; the
+command restores normal live collection when it finishes.
 
 Build an unpacked native Windows app from WSL with:
 

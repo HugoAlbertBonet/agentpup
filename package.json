@@ -20,6 +20,7 @@
     "autostart:windows": "npm run build && node scripts/start-windows.mjs --install-autostart",
     "autostart:windows:disable": "npm run build && node scripts/start-windows.mjs --remove-autostart",
     "benchmark": "npm run build && node dist/benchmark.cjs",
+    "benchmark:paint:windows": "npm run build && node scripts/benchmark-paint-windows.mjs",
     "integration:setup": "npm run build && node dist/integration.cjs setup",
     "integration:preview": "npm run build && node dist/integration.cjs setup --dry-run",
     "integration:doctor": "npm run build && node dist/integration.cjs doctor",

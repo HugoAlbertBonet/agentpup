@@ -47,6 +47,20 @@ describe("WSL Windows process launch", () => {
 
     expect(launcher).toContain("--benchmark-animations=off");
     expect(launcher).toContain("--benchmark-idle");
+    expect(launcher).toContain("--benchmark-working");
     expect(launcher).toContain("AGENTPUP_BENCHMARK_ARGUMENT");
+    expect(launcher).toContain("--paint-benchmark-report=");
+  });
+
+  it("provides a paint benchmark runner that restores normal live mode", async () => {
+    const benchmark = await readFile(
+      new URL("./benchmark-paint-windows.mjs", import.meta.url),
+      "utf8"
+    );
+
+    expect(benchmark).toContain("--benchmark-idle");
+    expect(benchmark).toContain("--paint-benchmark-report=");
+    expect(benchmark).toContain("finally");
+    expect(benchmark).toContain('runLauncher([])');
   });
 });
