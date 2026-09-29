@@ -182,7 +182,8 @@ Its editable pose masters, generation disclosure, review board, design notes,
 generated animation source sheets, and deterministic atlas exporter live in
 `pets/agentpup/source`; its importable runtime pair lives in
 `pets/agentpup/runtime`. The Pet settings animation preview plays the exact
-idle, working, needs-you, and ready rows of the currently selected pack.
+idle, working, and needs-you rows of the currently selected pack. Ready is not
+shown separately because AgentPup deliberately maps it to the idle animation.
 Downloaded gallery pets remain
 opt-in and local. Check each selected design's provenance and rights before
 redistribution; the gallery itself notes that some entries may be unofficial
