@@ -1,5 +1,17 @@
 export type TrayToggleResult = "started" | "stopped";
 
+export function supportsSystemTray(platform: NodeJS.Platform): boolean {
+  return platform === "win32" || platform === "darwin" || platform === "linux";
+}
+
+export function trayIconSize(platform: NodeJS.Platform): number {
+  return platform === "darwin" ? 22 : 32;
+}
+
+export function supportsWindowsAutostart(platform: NodeJS.Platform): boolean {
+  return platform === "win32";
+}
+
 export function toggleTrayRuntime(
   running: boolean,
   start: () => void,

@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 27 test files and 110 tests passed, followed by a successful build
+- Latest full npm run check: 27 test files and 116 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -192,8 +192,10 @@ lifecycle structure or aggregate counts.
 
 - Native macOS and Linux packaging workflows, direct bundled collector launch,
   and platform-specific identities are implemented and covered by automated
-  tests. Native CI packaging passes; installed-app launch and real-desktop
-  overlay behavior have not yet been measured on those platforms.
+  tests. The desktop host now also creates a platform-sized tray controller on
+  both systems with stop/start and quit actions; the Windows-only startup item
+  is omitted. Native CI packaging passes; installed-app launch and real-desktop
+  overlay/tray behavior have not yet been measured on those platforms.
 - The WSL-to-Windows development launcher now terminates the previous Electron
   process tree and waits for all runtime children before relaunching. The
   reference desktop reported exactly one AgentPup main process after restart;

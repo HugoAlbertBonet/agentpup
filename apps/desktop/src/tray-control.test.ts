@@ -2,11 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   autostartTrayPresentation,
+  supportsSystemTray,
+  supportsWindowsAutostart,
   toggleTrayRuntime,
+  trayIconSize,
   trayPresentation
 } from "./tray-control.js";
 
-describe("Windows tray control", () => {
+describe("system tray control", () => {
   it("stops a running pet runtime and offers to start it again", () => {
     const start = vi.fn();
     const stop = vi.fn();
@@ -42,5 +45,26 @@ describe("Windows tray control", () => {
       label: "Start with Windows",
       checked: false
     });
+  });
+
+  it.each([
+    ["win32", true],
+    ["darwin", true],
+    ["linux", true],
+    ["aix", false]
+  ] as const)("reports tray support on %s", (platform, expected) => {
+    expect(supportsSystemTray(platform)).toBe(expected);
+  });
+
+  it("uses the native menu-bar icon size on macOS", () => {
+    expect(trayIconSize("darwin")).toBe(22);
+    expect(trayIconSize("win32")).toBe(32);
+    expect(trayIconSize("linux")).toBe(32);
+  });
+
+  it("keeps the Windows startup control off other platform menus", () => {
+    expect(supportsWindowsAutostart("win32")).toBe(true);
+    expect(supportsWindowsAutostart("darwin")).toBe(false);
+    expect(supportsWindowsAutostart("linux")).toBe(false);
   });
 });

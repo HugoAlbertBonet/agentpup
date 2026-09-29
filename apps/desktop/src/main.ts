@@ -15,7 +15,8 @@ import {
   screen,
   shell,
   Tray,
-  type Display
+  type Display,
+  type MenuItemConstructorOptions
 } from "electron";
 
 import {
@@ -81,7 +82,10 @@ import {
 } from "./runtime-launch.js";
 import {
   autostartTrayPresentation,
+  supportsSystemTray,
+  supportsWindowsAutostart,
   toggleTrayRuntime,
+  trayIconSize,
   trayPresentation
 } from "./tray-control.js";
 import { createLoginItemSettings, resolveWslDistro } from "./login-item.js";
@@ -517,30 +521,33 @@ function setWindowsAutostart(enabled: boolean): void {
 function updateTrayPresentation(): void {
   if (tray === null || tray.isDestroyed()) return;
   const presentation = trayPresentation(petRuntimeRunning());
-  const autostart = autostartTrayPresentation(windowsAutostartEnabled());
-  tray.setToolTip(presentation.tooltip);
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      {
-        label: presentation.toggleLabel,
-        click: () => togglePetFromTray()
-      },
-      {
-        label: autostart.label,
-        type: "checkbox",
-        checked: autostart.checked,
-        click: (menuItem) => {
-          setWindowsAutostart(menuItem.checked);
-          updateTrayPresentation();
-        }
-      },
-      { type: "separator" },
-      {
-        label: "Quit AgentPup",
-        click: () => app.quit()
+  const template: MenuItemConstructorOptions[] = [
+    {
+      label: presentation.toggleLabel,
+      click: () => togglePetFromTray()
+    }
+  ];
+  if (supportsWindowsAutostart(process.platform)) {
+    const autostart = autostartTrayPresentation(windowsAutostartEnabled());
+    template.push({
+      label: autostart.label,
+      type: "checkbox",
+      checked: autostart.checked,
+      click: (menuItem) => {
+        setWindowsAutostart(menuItem.checked);
+        updateTrayPresentation();
       }
-    ])
+    });
+  }
+  template.push(
+    { type: "separator" },
+    {
+      label: "Quit AgentPup",
+      click: () => app.quit()
+    }
   );
+  tray.setToolTip(presentation.tooltip);
+  tray.setContextMenu(Menu.buildFromTemplate(template));
 }
 
 function stopPetRuntime(): void {
@@ -562,11 +569,12 @@ function togglePetFromTray(): void {
   updateTrayPresentation();
 }
 
-function createWindowsTray(): void {
-  if (process.platform !== "win32") return;
+function createSystemTray(): void {
+  if (!supportsSystemTray(process.platform)) return;
+  const iconSize = trayIconSize(process.platform);
   const icon = nativeImage
     .createFromPath(path.join(__dirname, "renderer", "assets", "tray-icon.png"))
-    .resize({ width: 32, height: 32, quality: "best" });
+    .resize({ width: iconSize, height: iconSize, quality: "best" });
   if (icon.isEmpty()) {
     console.error("[agentpup] Tray icon could not be loaded.");
     return;
@@ -867,7 +875,7 @@ if (!hasLock) {
     eventSnapshots.set("initial", await loadInitialEvents());
     publishStatus();
     registerIpc();
-    createWindowsTray();
+    createSystemTray();
     startPetRuntime();
 
     screen.on("display-metrics-changed", (_event, display) => {
