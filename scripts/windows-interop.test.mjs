@@ -34,4 +34,11 @@ describe("WSL Windows process launch", () => {
     expect(launcher).toContain("$shutdownDeadline");
     expect(launcher).toContain("AgentPup did not stop before restart");
   });
+
+  it("also retires the legacy LocalAppData development runtime", async () => {
+    const launcher = await readFile(new URL("./start-windows.mjs", import.meta.url), "utf8");
+
+    expect(launcher).toContain('$legacyDevelopmentRoot = Join-Path $env:LOCALAPPDATA "Claudepet\\development"');
+    expect(launcher).toContain("$_.ExecutablePath.StartsWith($legacyDevelopmentRoot");
+  });
 });

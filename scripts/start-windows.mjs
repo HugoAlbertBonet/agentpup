@@ -84,6 +84,7 @@ $electronVersion = $env:AGENTPUP_ELECTRON_VERSION
 $appArgument = $env:AGENTPUP_APP_ARGUMENT
 $autostartArgument = $env:AGENTPUP_AUTOSTART_ARGUMENT
 $developmentRoot = Join-Path $env:LOCALAPPDATA "AgentPup\development"
+$legacyDevelopmentRoot = Join-Path $env:LOCALAPPDATA "Claudepet\development"
 $runtimeRoot = Join-Path $developmentRoot ("electron-" + $electronVersion)
 $applicationRoot = Join-Path $developmentRoot "app"
 $legacyRuntimePrefix = Join-Path $env:TEMP "Claudepet-electron-"
@@ -92,6 +93,7 @@ $agentPupProcesses = @(Get-CimInstance Win32_Process |
   Where-Object {
     $_.ExecutablePath -and
     ($_.ExecutablePath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
+     $_.ExecutablePath.StartsWith($legacyDevelopmentRoot, [StringComparison]::OrdinalIgnoreCase) -or
      $_.ExecutablePath.StartsWith($legacyRuntimePrefix, [StringComparison]::OrdinalIgnoreCase))
   })
 $agentPupProcesses |
@@ -103,6 +105,7 @@ do {
     Where-Object {
       $_.ExecutablePath -and
       ($_.ExecutablePath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
+       $_.ExecutablePath.StartsWith($legacyDevelopmentRoot, [StringComparison]::OrdinalIgnoreCase) -or
        $_.ExecutablePath.StartsWith($legacyRuntimePrefix, [StringComparison]::OrdinalIgnoreCase))
     })
   if ($remainingAgentPupProcesses.Count -eq 0) { break }
