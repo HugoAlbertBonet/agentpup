@@ -13,7 +13,7 @@ Do not mark a scenario complete based only on similar automated coverage.
 - Codex CLI 0.157.1
 - Claude Code 2.1.161, including its VS Code frontend
 - Persistent collector running inside WSL and streaming metadata-only snapshots
-- Latest full npm run check: 32 test files and 157 tests passed, followed by a successful build
+- Latest full npm run check: 33 test files and 160 tests passed, followed by a successful build
 
 Provider prompts, answers, tool arguments, and tool output were not copied into
 the validation notes. Diagnostics and inspection scripts used only sanitized
@@ -106,6 +106,16 @@ lifecycle structure or aggregate counts.
   the provider name.
 
 ## Release automation observations
+
+- The original built-in AgentPup design exports as a valid OpenPets V2 atlas at
+  1536 by 2288 pixels with transparency. The runtime and desktop-bundled sheets
+  are byte-identical with SHA-256
+  `f3c628bcda3db5572c0bf32eebceb996819de4a3b7cef2ec9320adbf3f5d0a9e`.
+  The checked-in source handoff includes transparent pose masters, generation
+  disclosure, design notes, an MIT license, a deterministic FFmpeg exporter,
+  and a review board inspected on light and dark backgrounds. The full suite
+  passed with 160 tests after integration. Native Windows animation and sizing
+  with this exact sheet still require a user-visible acceptance check.
 
 - The public repository is connected at
   `github.com/HugoAlbertBonet/agentpup`; `main` and the release-candidate tag
@@ -366,11 +376,13 @@ lifecycle structure or aggregate counts.
 The user selected this product order on 2026-09-28. Outstanding reliability
 checks above remain release criteria and must not be inferred complete.
 
-1. Finish the Windows visual, provider setup, autostart-after-reboot, and
-   integration-removal checks using the CI-verified NSIS artifact.
-2. Add verified macOS and Linux support, treating Linux X11 and each supported
-   Wayland environment separately.
-3. Replace the bundled placeholder with an original default AgentPup design;
-   imported gallery pets remain optional additions chosen afterward.
-4. Measure latency and idle CPU, memory, GPU, and battery use on named reference
-   machines.
+The original default AgentPup design is now complete. Cross-platform packaged
+policy checks are automated, while physical macOS/Linux desktop acceptance
+remains unavailable in the current environment.
+
+1. Measure latency and idle CPU, memory, GPU, and battery use on the named
+   Windows/WSL reference machine.
+2. Finish the remaining Windows autostart-after-reboot and packaged interactive
+   checks using a current CI-verified NSIS artifact.
+3. Run physical macOS, Linux X11, and supported Wayland desktop acceptance when
+   those environments become available.

@@ -105,9 +105,9 @@ Click the pet to open agent activity, then choose the gear button to open **Pet 
 
 - **Gallery ↗** opens the [OpenPets gallery](https://openpets.dev/#pets) in the default browser.
 - **Import .zip** opens a native file picker. Download a gallery pet's `.zip`, then select it here; the imported pet becomes active immediately.
-- **Next pet** cycles through the bundled Hoodie Cat and every imported design.
+- **Next pet** cycles through the original bundled AgentPup and every imported design.
 
-AgentPup accepts OpenPets V1 and V2 packs containing `pet.json` and `spritesheet.webp`. Imports validate archive paths, file types, metadata, byte limits, and the fixed sprite dimensions before an asset reaches the renderer. The selected design persists across restarts. Individual gallery entries can have separate rights or attribution requirements; see the pack's gallery information before redistributing it.
+AgentPup accepts OpenPets V1 and V2 packs containing `pet.json` and `spritesheet.webp`. Imports validate archive paths, file types, metadata, byte limits, and the fixed sprite dimensions before an asset reaches the renderer. The selected design persists across restarts. The built-in AgentPup source art, export script, design notes, and MIT license are kept in `pets/agentpup`. Individual gallery entries can have separate rights or attribution requirements; see the pack's gallery information before redistributing it.
 
 **Diagnostics** in Pet settings shows the collector connection, last valid snapshot, detected Codex and Claude Code versions, hook configuration and observed delivery, transcript recovery, capabilities, and the last sanitized lifecycle event. **Copy diagnostic report** copies only those fields and aggregate counts; it excludes prompts, tool data, project names, session and turn identifiers, distro names, and file paths.
 

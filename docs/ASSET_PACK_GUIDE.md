@@ -177,10 +177,13 @@ Packs are untrusted input. The implemented importer applies these limits:
 - The renderer can request only a validated installed pet ID through a scoped
   local protocol. It receives no general filesystem path or Node access.
 
-The bundled Hoodie Cat is an MIT-licensed OpenPets asset and works offline.
-Downloaded gallery pets remain opt-in and local. Check each selected design's
-provenance and rights before redistribution; the gallery itself notes that some
-entries may be unofficial fan-made content.
+The original AgentPup design is bundled under the MIT license and works offline.
+Its editable pose masters, generation disclosure, review board, design notes,
+and deterministic atlas exporter live in `pets/agentpup/source`; its importable
+runtime pair lives in `pets/agentpup/runtime`. Downloaded gallery pets remain
+opt-in and local. Check each selected design's provenance and rights before
+redistribution; the gallery itself notes that some entries may be unofficial
+fan-made content.
 
 ## Creating and exporting a design
 

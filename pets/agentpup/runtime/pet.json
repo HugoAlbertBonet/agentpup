@@ -1,0 +1,7 @@
+{
+  "id": "agentpup",
+  "displayName": "AgentPup",
+  "description": "An attentive AI companion that watches local coding agents and signals when work, input, or a result needs attention.",
+  "spritesheetPath": "spritesheet.webp",
+  "spriteVersionNumber": 2
+}

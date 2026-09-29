@@ -178,8 +178,8 @@ function currentPet(): PetPresentation {
   if (installed === undefined) {
     return {
       id: builtInPetId,
-      displayName: "Hoodie Cat",
-      description: "The bundled OpenPets companion.",
+      displayName: "AgentPup",
+      description: "An attentive AI companion for local coding agents.",
       imageUrl: "assets/default-pet-spritesheet.webp",
       layout: builtInLayout
     };
