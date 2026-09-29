@@ -228,6 +228,17 @@ lifecycle structure or aggregate counts.
   install, installed-app launch, shutdown, uninstall, and upload. Its artifact
   is 114,883,835 bytes with digest
   `sha256:f34be3e4aca234142219cfd39611b30f620f43dd90b801e0c588d231cad7dd7d`.
+- Release candidate 17 passed the macOS/Linux workflow (run 36526494436),
+  including the packaged virtual-X11 behavior check: a click in an excluded
+  transparent region reached the background probe, while a click in the shaped
+  rotate control did not. The Linux AppImage is 128,494,619 bytes with digest
+  `sha256:d4785bec32dde742f0dbeac23618400a6ec40a401a79a6b38eb05c01218adb8f`;
+  the unsigned macOS ZIP is 132,427,268 bytes with digest
+  `sha256:1ae5e65ddbcab81389beb45a67cedc217d65e97c6047966a7685247a677dd79e`.
+  The Windows workflow (run 36526494494) also passed tests, NSIS verification,
+  clean install, launch, shutdown, uninstall, and upload. Its artifact is
+  114,883,672 bytes with digest
+  `sha256:e0387fbddeaf44ad0a5eedef806060ea67840fc9cc2655a7a35d8d90229a14e4`.
 
 ## Still requiring manual or release validation
 
@@ -252,9 +263,10 @@ lifecycle structure or aggregate counts.
   transparent canvas. Automated coverage validates runtime policy and rejects
   empty, oversized, fractional, negative, excessive, or out-of-window shape
   messages. Real X11 click-through and interaction behavior is still unmeasured.
-  The native Linux workflow now includes a packaged virtual-X11 acceptance test
-  that clicks both an excluded transparent point and the included rotate control;
-  its first tagged execution is pending.
+  The native Linux workflow includes a packaged virtual-X11 acceptance test
+  that clicks both an excluded transparent point and the included rotate control.
+  RC17 passed this check; real window-manager and compositor coverage remains
+  unmeasured.
 - Finished-result retention is persisted as a whole-number limit from 0 through
   20, defaulting to five. Automated coverage verifies that only the newest
   result-ready agents contribute orange entries and counts, while working agents
