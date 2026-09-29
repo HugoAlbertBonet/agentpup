@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -8,7 +9,7 @@ const runtime = new URL("../../../pets/agentpup/runtime/", import.meta.url);
 
 describe("original bundled AgentPup design", () => {
   it("is a valid self-contained V2 appearance pack", async () => {
-    const pet = await readInstalledPet(runtime.pathname, "agentpup");
+    const pet = await readInstalledPet(fileURLToPath(runtime), "agentpup");
 
     expect(pet.displayName).toBe("AgentPup");
     expect(pet.description).toMatch(/attention/i);

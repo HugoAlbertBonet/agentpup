@@ -116,6 +116,10 @@ lifecycle structure or aggregate counts.
   and a review board inspected on light and dark backgrounds. The full suite
   passed with 160 tests after integration. Native Windows animation and sizing
   with this exact sheet still require a user-visible acceptance check.
+- Windows workflow run 36531876598 (`v0.1.0-rc.21`) reached the full test suite
+  and exposed a test-only URL conversion that duplicated the drive prefix on
+  native Windows. The asset reader itself was unchanged; the test now uses
+  Node's cross-platform `fileURLToPath`. A corrected candidate is required.
 
 - The public repository is connected at
   `github.com/HugoAlbertBonet/agentpup`; `main` and the release-candidate tag
