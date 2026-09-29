@@ -139,6 +139,17 @@ lifecycle structure or aggregate counts.
   `sha256:cacd06ddeeb0816684de0d09db80ff7fd17af75debc127038203ba1993509fe9`)
   and `AgentPup-Linux-AppImage` (126,839,154 bytes; GitHub artifact digest
   `sha256:913e50fe3334f791e6527fc254d0c60c3a174b2c66b35ee02f530665d0b81f3d`).
+- Windows workflow run 36534301449 (`v0.1.0-rc.23`) passed all 162 tests,
+  installer verification, and the clean install/launch/shutdown/uninstall cycle
+  with the animated AgentPup atlas and settings preview. It uploaded
+  `AgentPup-Windows-unsigned` (113,487,702 bytes; GitHub artifact digest
+  `sha256:c81be751ea4661077463190c80fb9de34e2b6df399a55f8cb7c0d12a9aff68d9`).
+- Cross-platform workflow run 36534301458 (`v0.1.0-rc.23`) passed the macOS,
+  Linux X11, and headless Wayland policy gates and uploaded
+  `AgentPup-macOS-unsigned` (131,032,258 bytes; GitHub artifact digest
+  `sha256:bbce0528b09c3a0a5077a2cd1fce6bf4c20ed3740592757436b59182b3f2e427`)
+  and `AgentPup-Linux-AppImage` (127,098,756 bytes; GitHub artifact digest
+  `sha256:26cbeb674601d35806b5640750957bd65fe0d66d93c17b0be26bceedd097cf21`).
 
 - The public repository is connected at
   `github.com/HugoAlbertBonet/agentpup`; `main` and the release-candidate tag
