@@ -259,6 +259,17 @@ lifecycle structure or aggregate counts.
   verification, clean install, installed-app launch, shutdown, uninstall, and
   upload. Its artifact is 114,884,638 bytes with digest
   `sha256:5aaa316f4fe8b24974e3e749b3035dd34aa150fcc09cc91bd176a6367f1062e7`.
+- Release candidate 20 passed the macOS/Linux workflow (run 36529601889),
+  including packaged macOS policy, Linux X11 input-shape, and headless native
+  Wayland limited-policy acceptance. The unsigned macOS ZIP is 132,428,059
+  bytes with digest
+  `sha256:3257d032d74278166def30473b61ef9653e6815edae48ba151d1a436e99c53f5`;
+  the Linux AppImage is 128,495,269 bytes with digest
+  `sha256:8bbef9117912de40804aed4b3d56fe684bf0d02139c32d4b44d93b0a706d723e`.
+  The Windows workflow (run 36529601910) passed all 157 tests, NSIS
+  verification, clean install, installed-app launch, shutdown, uninstall, and
+  upload. Its artifact is 114,884,391 bytes with digest
+  `sha256:fdb1cfe1a7d9573e1d9cefdfb4dfcd5e7d1644bf50ade0dcc65d8df0afcfd649`.
 
 ## Still requiring manual or release validation
 
@@ -296,7 +307,8 @@ lifecycle structure or aggregate counts.
   the packaged AppImage with native Wayland selected. Its acceptance contract
   requires `linux-wayland` detection, a visible nonactivating window, and an
   explicit policy with no always-on-top, global click-through, or shaped
-  click-through claim. Its first tagged execution is pending.
+  click-through claim. RC20 passed this check. Compositor-specific behavior on
+  GNOME, KDE, and wlroots desktops remains unmeasured.
 - Finished-result retention is persisted as a whole-number limit from 0 through
   20, defaulting to five. Automated coverage verifies that only the newest
   result-ready agents contribute orange entries and counts, while working agents
