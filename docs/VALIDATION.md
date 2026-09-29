@@ -239,6 +239,16 @@ lifecycle structure or aggregate counts.
   clean install, launch, shutdown, uninstall, and upload. Its artifact is
   114,883,672 bytes with digest
   `sha256:e0387fbddeaf44ad0a5eedef806060ea67840fc9cc2655a7a35d8d90229a14e4`.
+- Release candidate 18 passed the macOS/Linux workflow (run 36527672814),
+  including both the packaged macOS native-window policy check and the Linux
+  X11 click-through check. The unsigned macOS ZIP is 132,428,051 bytes with
+  digest `sha256:5e37859e5ca2c9f251cd1d43669c6dc8bf7e935ffa2ae252ef83e0aa647f0fd7`;
+  the Linux AppImage is 128,495,059 bytes with digest
+  `sha256:e93747fa73ada7877eeb4054c9440199b3353f25d7a692dea192500d2aa2b283`.
+  The Windows workflow (run 36527672753) failed in `npm run check` because the
+  new report-path unit test used a POSIX absolute path on the Windows runner.
+  The test now constructs its input with the host path module; a corrected
+  native Windows run remains required.
 
 ## Still requiring manual or release validation
 
@@ -270,7 +280,8 @@ lifecycle structure or aggregate counts.
 - The native macOS workflow now launches the packaged application with a bounded
   acceptance-report path and validates its actual BrowserWindow state: visible,
   unfocused, non-focusable, topmost, shadowless, 460×680, and at the bottom-right
-  of the reported work area. Its first tagged execution is pending.
+  of the reported work area. RC18 passed this check on `macos-latest`; physical
+  Spaces, fullscreen, and multi-display behavior remains unmeasured.
 - Finished-result retention is persisted as a whole-number limit from 0 through
   20, defaulting to five. Automated coverage verifies that only the newest
   result-ready agents contribute orange entries and counts, while working agents
