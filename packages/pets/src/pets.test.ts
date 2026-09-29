@@ -57,7 +57,7 @@ describe("OpenPets compatibility", () => {
   });
 
   it("maps aggregate agent state to OpenPets animation rows", () => {
-    expect(resolvePetAnimation("idle")).toMatchObject({ row: 0, frames: 6 });
+    expect(resolvePetAnimation("idle")).toMatchObject({ row: 0, frames: 6, iterations: 1 });
     expect(resolvePetAnimation("working")).toMatchObject({
       row: 7,
       frames: 6,

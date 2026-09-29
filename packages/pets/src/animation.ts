@@ -11,7 +11,7 @@ const idleAnimation: PetAnimation = {
   row: 0,
   frames: 6,
   durationMs: 5_500,
-  iterations: "infinite"
+  iterations: 1
 };
 
 const animations: Record<PetVisualState, PetAnimation> = {

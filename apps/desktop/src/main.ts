@@ -426,7 +426,7 @@ async function changeIntegration(
 }
 
 function startLiveCollector(): void {
-  if (process.argv.includes("--demo")) return;
+  if (process.argv.includes("--demo") || process.argv.includes("--benchmark-idle")) return;
   const source = process.platform === "win32" ? "wsl-live" : `native-${process.platform}`;
   const collectorPath = runtimeScriptPath(
     "collector.cjs",
@@ -969,6 +969,7 @@ function registerIpc(): void {
 }
 
 async function loadInitialEvents(): Promise<StatusEvent[]> {
+  if (process.argv.includes("--benchmark-idle")) return [];
   if (process.argv.includes("--demo")) return createDemoEvents();
 
   const userHome = os.homedir();
@@ -1021,6 +1022,9 @@ if (!hasLock) {
       }
     }
     await refreshPetLibrary();
+    if (process.argv.includes("--benchmark-animations=off")) {
+      petPreferences = { ...petPreferences, animationsEnabled: false };
+    }
     registerPetProtocol();
     eventSnapshots.set("initial", await loadInitialEvents());
     publishStatus();

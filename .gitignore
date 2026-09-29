@@ -1,5 +1,6 @@
 dist/
 node_modules/
 release/
+performance-results/
 *.log
 .DS_Store

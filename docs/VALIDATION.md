@@ -391,8 +391,9 @@ lifecycle structure or aggregate counts.
   policy or hook after repairing the integration, continued stop hooks,
   foreground/background subagent combinations, and Codex structured questions
   in other supported frontends
-- Long-duration idle CPU, RSS/GPU, battery, hook latency, snapshot latency, and
-  first-painted-badge measurements against the targets in the plan
+- Long-duration resource stability, GPU, battery, source-to-first-painted-badge
+  latency, and direct/persistent hook transport timing against the targets in
+  the plan
 - Pet-offline behavior while an agent continues, full application crash
   recovery, native Windows tray icon visibility/click behavior, and successful
   autostart after another Windows reboot
@@ -414,9 +415,31 @@ The original default AgentPup design is now complete. Cross-platform packaged
 policy checks are automated, while physical macOS/Linux desktop acceptance
 remains unavailable in the current environment.
 
-1. Measure latency and idle CPU, memory, GPU, and battery use on the named
-   Windows/WSL reference machine.
+1. Add source-to-first-painted-badge instrumentation and profile the active
+   working animation's measured CPU cost; GPU, battery, and long-duration
+   stability remain unavailable in the current harness.
 2. Finish the remaining Windows autostart-after-reboot and packaged interactive
    checks using a current CI-verified NSIS artifact.
 3. Run physical macOS, Linux X11, and supported Wayland desktop acceptance when
    those environments become available.
+
+## Performance reference measurement (2026-09-29)
+
+- Added an aggregate-only benchmark with synthetic reducer input, hook
+  self-tests, empty temporary collector homes, and native Windows Electron
+  process-group sampling. Raw local reports are ignored by Git. See
+  [PERFORMANCE.md](PERFORMANCE.md) for the reproducible command and method.
+- On Windows 11 Home build 26200, Intel Core 7 240H (16 logical processors),
+  Electron 44.4.5, settled idle CPU measured 0.16% of one core with animations
+  enabled and 0.31% with animations disabled. Both pass the initial under-1%
+  resting target; the difference is within short-sample noise.
+- The active working animation measured 17.02% of one core. This is outside the
+  resting target's scope but is material and remains an optimization candidate.
+- Native Electron process-group RSS/private memory measured 400,941,056 /
+  247,619,584 bytes at settled idle with animations enabled, and 456,712,192 /
+  271,654,912 bytes during the working animation.
+- Synthetic reducer p95 was 0.003 ms, hook-helper process startup p95 was
+  28.439 ms, and cold collector first-snapshot p95 was 133.507 ms. Helper
+  startup is intentionally separate from direct/persistent observer time.
+- GPU, battery, long-duration stability, and first-painted-badge latency remain
+  unmeasured and are not inferred from these results.

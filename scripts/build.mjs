@@ -64,6 +64,16 @@ await Promise.all([
     logLevel: "info"
   }),
   build({
+    entryPoints: [path.join(root, "apps/benchmark/src/main.ts")],
+    outfile: path.join(output, "benchmark.cjs"),
+    bundle: true,
+    platform: "node",
+    format: "cjs",
+    target: "node24",
+    sourcemap: true,
+    logLevel: "info"
+  }),
+  build({
     entryPoints: [path.join(root, "apps/desktop/src/renderer.ts")],
     outfile: path.join(output, "renderer/renderer.js"),
     bundle: true,

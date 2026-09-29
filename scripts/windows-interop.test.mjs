@@ -41,4 +41,12 @@ describe("WSL Windows process launch", () => {
     expect(launcher).toContain('$legacyDevelopmentRoot = Join-Path $env:LOCALAPPDATA "Claudepet\\development"');
     expect(launcher).toContain("$_.ExecutablePath.StartsWith($legacyDevelopmentRoot");
   });
+
+  it("forwards the non-persistent animation benchmark override", async () => {
+    const launcher = await readFile(new URL("./start-windows.mjs", import.meta.url), "utf8");
+
+    expect(launcher).toContain("--benchmark-animations=off");
+    expect(launcher).toContain("--benchmark-idle");
+    expect(launcher).toContain("AGENTPUP_BENCHMARK_ARGUMENT");
+  });
 });

@@ -113,6 +113,11 @@ AgentPup accepts OpenPets V1 and V2 packs containing `pet.json` and `spritesheet
 
 **Diagnostics** in Pet settings shows the collector connection, last valid snapshot, detected Codex and Claude Code versions, hook configuration and observed delivery, transcript recovery, capabilities, and the last sanitized lifecycle event. **Copy diagnostic report** copies only those fields and aggregate counts; it excludes prompts, tool data, project names, session and turn identifiers, distro names, and file paths.
 
+The privacy-safe Windows/WSL performance harness is documented in
+[docs/PERFORMANCE.md](docs/PERFORMANCE.md). With the native development pet
+running, `npm run benchmark -- --label=current` reports aggregate reducer, hook
+startup, collector startup, CPU, and memory measurements.
+
 Build an unpacked native Windows app from WSL with:
 
 ```sh

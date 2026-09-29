@@ -65,12 +65,20 @@ const autostartArgument = process.argv.includes("--install-autostart")
   : process.argv.includes("--remove-autostart")
     ? "--disable-autostart"
     : "";
+const benchmarkArgument = process.argv.includes("--benchmark-animations=off")
+  ? "--benchmark-animations=off"
+  : "";
+const benchmarkIdleArgument = process.argv.includes("--benchmark-idle")
+  ? "--benchmark-idle"
+  : "";
 const forwardedVariables = [
   "AGENTPUP_WINDOWS_ARCHIVE",
   "AGENTPUP_WINDOWS_SOURCE",
   "AGENTPUP_ELECTRON_VERSION",
   "AGENTPUP_APP_ARGUMENT",
   "AGENTPUP_AUTOSTART_ARGUMENT",
+  "AGENTPUP_BENCHMARK_ARGUMENT",
+  "AGENTPUP_BENCHMARK_IDLE_ARGUMENT",
   "AGENTPUP_WSL_COLLECTOR_PATH",
   "AGENTPUP_WSL_INTEGRATION_PATH",
   "AGENTPUP_WSL_DISTRO"
@@ -83,6 +91,8 @@ $sourceRoot = $env:AGENTPUP_WINDOWS_SOURCE
 $electronVersion = $env:AGENTPUP_ELECTRON_VERSION
 $appArgument = $env:AGENTPUP_APP_ARGUMENT
 $autostartArgument = $env:AGENTPUP_AUTOSTART_ARGUMENT
+$benchmarkArgument = $env:AGENTPUP_BENCHMARK_ARGUMENT
+$benchmarkIdleArgument = $env:AGENTPUP_BENCHMARK_IDLE_ARGUMENT
 $developmentRoot = Join-Path $env:LOCALAPPDATA "AgentPup\development"
 $legacyDevelopmentRoot = Join-Path $env:LOCALAPPDATA "Claudepet\development"
 $runtimeRoot = Join-Path $developmentRoot ("electron-" + $electronVersion)
@@ -131,6 +141,8 @@ Copy-Item -Path (Join-Path $sourceRoot "package.json") -Destination $application
 $arguments = @($applicationRoot)
 if ($appArgument) { $arguments += $appArgument }
 if ($autostartArgument) { $arguments += $autostartArgument }
+if ($benchmarkArgument) { $arguments += $benchmarkArgument }
+if ($benchmarkIdleArgument) { $arguments += $benchmarkIdleArgument }
 Start-Process -FilePath (Join-Path $runtimeRoot "electron.exe") -ArgumentList $arguments
 Write-Output "AgentPup started as a native Windows development app."
 `;
@@ -161,6 +173,8 @@ const child = spawn(
       AGENTPUP_ELECTRON_VERSION: electronVersion,
       AGENTPUP_APP_ARGUMENT: demoArgument,
       AGENTPUP_AUTOSTART_ARGUMENT: autostartArgument,
+      AGENTPUP_BENCHMARK_ARGUMENT: benchmarkArgument,
+      AGENTPUP_BENCHMARK_IDLE_ARGUMENT: benchmarkIdleArgument,
       AGENTPUP_WSL_COLLECTOR_PATH: path.join(root, "dist", "collector.cjs"),
       AGENTPUP_WSL_INTEGRATION_PATH: path.join(root, "dist", "integration.cjs"),
       AGENTPUP_WSL_DISTRO: process.env.WSL_DISTRO_NAME,
