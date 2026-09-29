@@ -748,6 +748,7 @@ function createOverlay(): BrowserWindow {
         corner: currentCorner,
         trayCreated: tray !== null && !tray.isDestroyed(),
         startupControlSupported: supportsStartupControl(process.platform),
+        policy: getOverlayWindowPolicy(runtime),
         window: {
           bounds: window.getBounds(),
           workArea: display.workArea,

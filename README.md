@@ -159,6 +159,9 @@ Wayland desktop with Xwayland installed, launch AgentPup with
 AgentPup limits its native input shape to the visible pet, status controls, and
 open activity panel so the rest of the transparent window passes clicks to the
 application below. This behavior still requires real-desktop X11 validation.
+Linux CI also launches the packaged AppImage in a headless native Wayland
+compositor and verifies that AgentPup detects Wayland, shows a nonactivating
+window, and does not claim unsupported topmost or shaped-click-through support.
 
 Before publishing a final release, follow the
 [clean-machine Windows checklist](docs/WINDOWS_RELEASE_CHECKLIST.md).

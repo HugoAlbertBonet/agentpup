@@ -35,14 +35,17 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run ${{ matrix.package-script }}
-      - name: Install X11 acceptance utility
+      - name: Install Linux desktop acceptance utilities
         if: matrix.smoke-platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xdotool
+          sudo apt-get install -y weston xdotool
       - name: Verify packaged Linux X11 click-through
         if: matrix.smoke-platform == 'linux'
         run: xvfb-run -a node scripts/verify-linux-x11-overlay.mjs 2>&1 | tee x11-overlay.log
+      - name: Verify packaged native Wayland limited policy
+        if: matrix.smoke-platform == 'linux'
+        run: node scripts/verify-linux-wayland-overlay.mjs 2>&1 | tee wayland-overlay.log
       - name: Verify packaged macOS overlay policy
         if: matrix.smoke-platform == 'mac'
         run: node scripts/verify-macos-overlay.mjs 2>&1 | tee macos-overlay.log
@@ -64,6 +67,12 @@ jobs:
         with:
           name: AgentPup-Linux-X11-acceptance-log
           path: x11-overlay.log
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: failure() && matrix.smoke-platform == 'linux'
+        with:
+          name: AgentPup-Linux-Wayland-acceptance-log
+          path: wayland-overlay.log
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: failure() && matrix.smoke-platform == 'mac'
