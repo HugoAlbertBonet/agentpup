@@ -7,12 +7,19 @@ export interface PetAnimation {
   readonly iterations: number | "infinite";
 }
 
+const idleAnimation: PetAnimation = {
+  row: 0,
+  frames: 6,
+  durationMs: 5_500,
+  iterations: "infinite"
+};
+
 const animations: Record<PetVisualState, PetAnimation> = {
-  idle: { row: 0, frames: 6, durationMs: 5_500, iterations: "infinite" },
+  idle: idleAnimation,
   working: { row: 7, frames: 6, durationMs: 820, iterations: "infinite" },
   "needs-you": { row: 3, frames: 4, durationMs: 700, iterations: 2 },
-  ready: { row: 4, frames: 5, durationMs: 840, iterations: 2 },
-  unknown: { row: 0, frames: 6, durationMs: 5_500, iterations: "infinite" }
+  ready: idleAnimation,
+  unknown: idleAnimation
 };
 
 export function resolvePetAnimation(state: PetVisualState): PetAnimation {

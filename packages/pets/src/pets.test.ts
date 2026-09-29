@@ -64,7 +64,7 @@ describe("OpenPets compatibility", () => {
       iterations: "infinite"
     });
     expect(resolvePetAnimation("needs-you")).toMatchObject({ row: 3, frames: 4 });
-    expect(resolvePetAnimation("ready")).toMatchObject({ row: 4, frames: 5 });
+    expect(resolvePetAnimation("ready")).toEqual(resolvePetAnimation("idle"));
   });
 
   it("gives human requests priority and still shows an otherwise ready result", () => {

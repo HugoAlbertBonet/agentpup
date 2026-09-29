@@ -14,8 +14,8 @@ the pet readable at its normal desktop size.
   subtle tail movement.
 - **Needs you:** a seated paw raise and brighter posture. Motion is stronger than
   the other states so the request remains recognizable without relying on red.
-- **Ready:** a joyful hop for a finished result. The shared UI supplies the
-  persistent result count after the short celebration.
+- **Ready:** reuses the calm resting idle loop. The shared orange result count
+  carries the persistent completion signal without changing the pet's pose.
 - **Concern:** lowered ears and posture for interruption or an uncertain state.
 - **Walking:** a side-facing step used by roaming-capable renderers.
 

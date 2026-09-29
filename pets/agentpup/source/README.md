@@ -38,7 +38,8 @@ walking poses. Follow-up image-edit prompts isolated consistent transparent
 pose masters while preserving the same proportions, palette, face, antenna,
 collar, and tag. The refined animation prompts requested a six-frame laptop
 typing and blinking loop, a seated paw-raise attention loop, and a patiently
-resting breathing/blinking loop. The ready pose hops, the concern pose lowers
-its ears, and the walking pose faces right.
+resting breathing/blinking loop. AgentPup intentionally reuses that resting
+loop for ready results; the concern pose lowers its ears, and the walking pose
+faces right.
 
 The source and exported AgentPup artwork are available under `LICENSE`.
