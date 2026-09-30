@@ -82,8 +82,9 @@ lifecycle structure or aggregate counts.
 - After a Windows restart, the tray icon was absent because the development host
   had no login registration. The new autostart command installed and read back a
   `dev.claudepet.desktop` Windows Run entry targeting the stable LocalAppData app,
-  Electron runtime, and selected WSL distro. A subsequent reboot is still needed
-  to validate execution of that entry.
+  Electron runtime, and selected WSL distro. On 2026-09-29, the user confirmed
+  that AgentPup started successfully after restarting Windows, validating
+  execution of that development-host login entry.
 - The unpacked Windows artifact builds successfully from WSL and contains the
   collector, integration CLI, and hook helper as unpacked runtime resources.
 - The 0.1.0 unpacked artifact was copied to LocalAppData and launched without
@@ -395,11 +396,10 @@ lifecycle structure or aggregate counts.
   latency, and direct/persistent hook transport timing against the targets in
   the plan
 - Pet-offline behavior while an agent continues, full application crash
-  recovery, native Windows tray icon visibility/click behavior, and successful
-  autostart after another Windows reboot
+  recovery, and native Windows tray icon visibility/click behavior
 - Live validation of the packaged first-run integration page, code signing,
-  startup registration across reboot, and interactive removal of provider hooks
-  without the original repository path
+  packaged startup registration across reboot, and interactive removal of
+  provider hooks without the original repository path
 - Visual overlay checks and native/WSL provider integration remain manual on the
   reference computer. A second physical computer is no longer required for the
   self-contained installer check.
@@ -418,7 +418,7 @@ remains unavailable in the current environment.
 1. Extend the measured renderer paint-ready leg to provider-source ingestion and
    OS compositor visibility; GPU, battery, and long-duration stability remain
    unavailable in the current harness.
-2. Finish the remaining Windows autostart-after-reboot and packaged interactive
+2. Finish the remaining packaged Windows first-run, startup, and hook-removal
    checks using a current CI-verified NSIS artifact.
 3. Run physical macOS, Linux X11, and supported Wayland desktop acceptance when
    those environments become available.
