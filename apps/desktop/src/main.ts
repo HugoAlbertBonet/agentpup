@@ -33,6 +33,7 @@ import {
   discoveredSessionsToEvents
 } from "../../../packages/collectors/src/local-discovery.js";
 import { parseCollectorMessage } from "../../../packages/collectors/src/live-collector.js";
+import { mergeCollectorDiagnostics } from "../../../packages/collectors/src/diagnostics-merge.js";
 import type { CollectorRuntimeDiagnostics } from "../../../packages/collectors/src/live-collector.js";
 import {
   startCollectorBridge,
@@ -137,8 +138,10 @@ let startupEnabled = false;
 let status: StatusState = createStatusState();
 const eventSnapshots = new Map<string, StatusEvent[]>();
 let collectorBridge: CollectorBridge | null = null;
+let nativeCollectorBridge: CollectorBridge | null = null;
 let collectorState: CollectorConnectionState = process.argv.includes("--demo") ? "demo" : "waiting";
 let collectorDiagnostics: CollectorRuntimeDiagnostics | null = null;
+const diagnosticsBySource = new Map<string, CollectorRuntimeDiagnostics>();
 let lastCollectorEvent: SanitizedEventReference | null = null;
 let quitting = false;
 let interactionActive = false;
@@ -395,15 +398,17 @@ function runtimeScriptPath(name: string, override: string | undefined): string |
     : bundledRuntimePath(name);
 }
 
-function executeIntegrationCommand(command: "status" | "setup" | "uninstall"): Promise<string> {
-  const scriptPath = runtimeScriptPath(
+function executeIntegrationCommand(command: "status" | "setup" | "uninstall", nativeCursor = false): Promise<string> {
+  const scriptPath = nativeCursor ? bundledRuntimePath("integration.cjs") : runtimeScriptPath(
     "integration.cjs",
     process.env.AGENTPUP_WSL_INTEGRATION_PATH ?? process.env.CLAUDEPET_WSL_INTEGRATION_PATH
   );
   if (scriptPath === null) {
     return Promise.reject(new Error("The WSL integration runtime is unavailable."));
   }
-  const launch = createScriptLaunch(
+  const launch = nativeCursor
+    ? { executable: process.execPath, arguments: [scriptPath, command, "--provider=cursor"] }
+    : createScriptLaunch(
     process.platform,
     process.execPath,
     scriptPath,
@@ -413,7 +418,8 @@ function executeIntegrationCommand(command: "status" | "setup" | "uninstall"): P
   return new Promise((resolve, reject) => {
     const child = spawn(launch.executable, launch.arguments, {
       windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }
     });
     let stdout = "";
     let stderr = "";
@@ -448,7 +454,14 @@ function executeIntegrationCommand(command: "status" | "setup" | "uninstall"): P
 }
 
 async function integrationStatus(): Promise<IntegrationStatus> {
-  const parsed = parseIntegrationStatus(await executeIntegrationCommand("status"));
+  const native = process.platform === "win32"
+    ? parseIntegrationStatus(await executeIntegrationCommand("status", true)) : null;
+  let parsed: IntegrationStatus | null;
+  try { parsed = parseIntegrationStatus(await executeIntegrationCommand("status")); }
+  catch (error) { if (native === null) throw error; parsed = native; }
+  if (parsed !== null && native !== null) {
+    parsed = { ...parsed, providers: [...parsed.providers.filter(p => p.provider !== "cursor"), ...native.providers] };
+  }
   if (parsed === null) throw new Error("The integration runtime returned invalid status data.");
   return parsed;
 }
@@ -456,7 +469,10 @@ async function integrationStatus(): Promise<IntegrationStatus> {
 async function changeIntegration(
   command: "setup" | "uninstall"
 ): Promise<IntegrationActionResult> {
-  await executeIntegrationCommand(command);
+  if (process.platform === "win32") await executeIntegrationCommand(command, true);
+  if (process.platform !== "win32" || runtimeScriptPath("integration.cjs", process.env.AGENTPUP_WSL_INTEGRATION_PATH) !== null) {
+    await executeIntegrationCommand(command);
+  }
   return {
     message:
       command === "setup"
@@ -472,6 +488,9 @@ function startLiveCollector(): void {
     process.argv.includes("--benchmark-idle") ||
     process.argv.includes("--benchmark-working")
   ) return;
+  if (process.platform === "win32") {
+    nativeCollectorBridge = connectLiveCollector("windows-native", bundledRuntimePath("collector.cjs"), true);
+  }
   const source = process.platform === "win32" ? "wsl-live" : `native-${process.platform}`;
   const collectorPath = runtimeScriptPath(
     "collector.cjs",
@@ -482,8 +501,13 @@ function startLiveCollector(): void {
     console.error("[agentpup] Collector path is unavailable; using discovery only.");
     return;
   }
+  collectorBridge = connectLiveCollector(source, collectorPath);
+}
+
+function connectLiveCollector(source: string, collectorPath: string, native = false): CollectorBridge {
   let disconnected = false;
-  collectorBridge = startCollectorBridge({
+  return startCollectorBridge({
+    native,
     platform: process.platform,
     collectorPath,
     ...(configuredWslDistro === undefined
@@ -496,7 +520,10 @@ function startLiveCollector(): void {
         return false;
       }
       collectorState = "connected";
-      collectorDiagnostics = message.diagnostics ?? collectorDiagnostics;
+      if (message.diagnostics !== undefined) {
+        diagnosticsBySource.set(source, message.diagnostics);
+        collectorDiagnostics = mergeCollectorDiagnostics([...diagnosticsBySource.values()]);
+      }
       const latestEvent = message.events
         .filter((event) => event.type !== "collector.connected" && event.type !== "collector.disconnected")
         .sort((left, right) => right.observedAt.localeCompare(left.observedAt))[0];
@@ -666,6 +693,8 @@ function updateTrayPresentation(): void {
 function stopPetRuntime(): void {
   collectorBridge?.stop();
   collectorBridge = null;
+  nativeCollectorBridge?.stop();
+  nativeCollectorBridge = null;
   collectorState = process.argv.includes("--demo") ? "demo" : "waiting";
   if (overlay !== null && !overlay.isDestroyed()) overlay.destroy();
   overlay = null;
@@ -1128,6 +1157,8 @@ app.on("before-quit", () => {
   tray = null;
   collectorBridge?.stop();
   collectorBridge = null;
+  nativeCollectorBridge?.stop();
+  nativeCollectorBridge = null;
 });
 app.on("window-all-closed", () => {
   if (tray === null || tray.isDestroyed()) app.quit();

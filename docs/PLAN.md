@@ -251,3 +251,7 @@ docs/                  setup, architecture, pack authoring, compatibility
 Release acceptance must include a real keyboard/mouse session, monitor unplug/replug, suspend/resume, WSL shutdown/restart, denied and canceled approvals, a permission automatically resolved by another mechanism, foreground/background subagents, resumed subagents, concurrent nonblocking questions, continued stop hooks, long silent work, and a pet-offline scenario that leaves the coding agent usable.
 
 Platform priority is confirmed: Windows + WSL first, cross-platform later. The unresolved technical promises are exact passive resolution coverage in each provider/frontend/version, selective click-through under rapid input, and movement/resource behavior on the target displays. Those are explicit first-phase measurements, not reasons to build the rest on assumptions.
+
+## Cursor compatibility (2026-10-10)
+
+Implemented local Cursor hook-based monitoring, flat `~/.cursor/hooks.json` configuration with preservation/backups/idempotent removal, stable conversation/generation identities, completion/cancellation/error handling, Cursor activity presentation and diagnostics, and simultaneous native Windows/WSL collectors. Cursor-only setup is available with `--provider=cursor`. Hook inbox recovery is used; Cursor transcript databases and cloud agents are outside this slice. Permission/structured-question coverage and active subagent discovery remain unclaimed. Live frontend acceptance is still required. Reference: [Cursor hooks](https://cursor.com/docs/hooks).

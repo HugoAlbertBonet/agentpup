@@ -19,7 +19,7 @@ const collectorPrefix = collectorPrefixForEnvironment(
   process.platform,
   process.env.WSL_DISTRO_NAME
 );
-const collectorIds = [`${collectorPrefix}:codex`, `${collectorPrefix}:claude-code`];
+const collectorIds = [`${collectorPrefix}:codex`, `${collectorPrefix}:claude-code`, `${collectorPrefix}:cursor`];
 const agentPupHomes = agentPupDataHomes(home, process.env);
 const scanIntervalMs = 1_500;
 const heartbeatIntervalMs = 15_000;
@@ -30,7 +30,8 @@ let stopped = false;
 
 const versions = {
   codex: providerVersion("codex"),
-  "claude-code": providerVersion("claude")
+  "claude-code": providerVersion("claude"),
+  cursor: providerVersion("cursor-agent")
 };
 
 async function providerDiagnostics(
@@ -43,7 +44,7 @@ async function providerDiagnostics(
       ? {}
       : { claudeHome: process.env.CLAUDE_CONFIG_DIR })
   });
-  return (["codex", "claude-code"] as const).map((provider) => {
+  return (["codex", "claude-code", "cursor"] as const).map((provider) => {
     const inspection = inspections.find((value) => value.provider === provider);
     return {
       provider,

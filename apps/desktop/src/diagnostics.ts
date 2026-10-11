@@ -64,7 +64,7 @@ export interface CreateDiagnosticsInput {
   readonly status: StatusState;
 }
 
-const providers: readonly Provider[] = ["codex", "claude-code"];
+const providers: readonly Provider[] = ["codex", "claude-code", "cursor"];
 
 export function createDiagnosticsSnapshot(input: CreateDiagnosticsInput): DiagnosticsSnapshot {
   const summary = aggregateStatus(input.status);
@@ -122,7 +122,7 @@ export function formatDiagnosticsReport(snapshot: DiagnosticsSnapshot): string {
     `Counts: ${snapshot.counts.working} working, ${snapshot.counts.needsYou} need you, ${snapshot.counts.resultsReady} ready`
   ];
   for (const provider of snapshot.providers) {
-    const label = provider.provider === "codex" ? "Codex" : "Claude Code";
+    const label = provider.provider === "cursor" ? "Cursor" : provider.provider === "codex" ? "Codex" : "Claude Code";
     lines.push(`${label} version: ${provider.version ?? "not detected"}`);
     lines.push(`${label} hooks: ${provider.hookConfiguration}`);
     lines.push(`${label} hook events observed: ${provider.hookEventsObserved ? "yes" : "no"}`);

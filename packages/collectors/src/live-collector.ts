@@ -220,7 +220,7 @@ export function createSnapshotEvents(
   for (const collectorId of collectorIds) {
     add(collectorId, {
       type: "collector.connected",
-      capabilities: [
+      capabilities: collectorId.endsWith(":cursor") ? ["lifecycle-hooks", "hook-inbox-recovery"] : [
         "filesystem-recovery",
         "lifecycle-hooks",
         "permissions",
@@ -300,7 +300,7 @@ function validIdentity(value: unknown): boolean {
   const identity = object(value);
   if (identity === undefined) return false;
   return (
-    ["claude-code", "codex"].includes(String(identity.provider)) &&
+    ["claude-code", "codex", "cursor"].includes(String(identity.provider)) &&
     ["collectorId", "sessionId", "agentId", "displayName", "project"].every(
       (key) => typeof identity[key] === "string"
     ) &&
@@ -388,7 +388,7 @@ function validCollectorDiagnostics(value: unknown): value is CollectorRuntimeDia
   const seen = new Set<string>();
   for (const value of diagnostics.providers) {
     const provider = object(value);
-    if (provider === undefined || !["codex", "claude-code"].includes(String(provider.provider))) {
+    if (provider === undefined || !["codex", "claude-code", "cursor"].includes(String(provider.provider))) {
       return false;
     }
     if (seen.has(String(provider.provider))) return false;

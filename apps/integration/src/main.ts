@@ -21,6 +21,7 @@ const agentPupHome = resolveAgentPupHome(home, process.env);
 const deployedHookPath = path.join(agentPupHome, "runtime", "hook.cjs");
 const integrationLocations = {
   home,
+  ...(process.argv.includes("--provider=cursor") ? { providers: ["cursor" as const] } : {}),
   ...(process.env.CODEX_HOME === undefined ? {} : { codexHome: process.env.CODEX_HOME }),
   ...(process.env.CLAUDE_CONFIG_DIR === undefined
     ? {}
@@ -31,6 +32,7 @@ function printTargets(): void {
   console.log("AgentPup will add metadata-only command hooks to:");
   console.log(`  Claude Code: ${process.env.CLAUDE_CONFIG_DIR ?? path.join(home, ".claude")}/settings.json`);
   console.log(`  Codex:       ${process.env.CODEX_HOME ?? path.join(home, ".codex")}/hooks.json`);
+  console.log(`  Cursor:      ${path.join(home, ".cursor", "hooks.json")}`);
   console.log(`  Hook helper: ${deployedHookPath}`);
   console.log("Existing hook entries are preserved; prompt and tool bodies are discarded.");
 }
@@ -41,7 +43,7 @@ async function doctor(): Promise<boolean> {
   console.log(`Claude Code: ${providerVersion("claude") ?? "not found"}`);
   console.log(`Codex:       ${providerVersion("codex") ?? "not found"}`);
   for (const inspection of inspections) {
-    const label = inspection.provider === "claude-code" ? "Claude hooks" : "Codex hooks";
+    const label = inspection.provider === "cursor" ? "Cursor hooks" : inspection.provider === "claude-code" ? "Claude hooks" : "Codex hooks";
     const state = !inspection.valid
       ? `invalid (${inspection.error ?? "unknown error"})`
       : inspection.installed
@@ -94,7 +96,7 @@ async function main(): Promise<void> {
           environment: process.env.WSL_DISTRO_NAME === undefined ? "native" : "wsl",
           providers: inspections.map((inspection) => ({
             provider: inspection.provider,
-            version: providerVersion(inspection.provider === "codex" ? "codex" : "claude"),
+            version: providerVersion(inspection.provider === "cursor" ? "cursor-agent" : inspection.provider === "codex" ? "codex" : "claude"),
             installed: inspection.installed,
             valid: inspection.valid
           }))
@@ -110,7 +112,7 @@ async function main(): Promise<void> {
       }
       await access(hookSourcePath);
       const report = await installIntegration({
-        home,
+        ...integrationLocations,
         ...(integrationLocations.codexHome === undefined
           ? {}
           : { codexHome: integrationLocations.codexHome }),

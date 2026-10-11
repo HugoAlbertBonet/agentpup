@@ -61,6 +61,7 @@ const diagnosticsBack = byId<HTMLButtonElement>("diagnostics-back");
 const diagnosticsCollector = byId<HTMLElement>("diagnostics-collector");
 const diagnosticsLastSnapshot = byId<HTMLElement>("diagnostics-last-snapshot");
 const diagnosticsCodex = byId<HTMLElement>("diagnostics-codex");
+const diagnosticsCursor = byId<HTMLElement>("diagnostics-cursor");
 const diagnosticsClaude = byId<HTMLElement>("diagnostics-claude");
 const diagnosticsLastEvent = byId<HTMLElement>("diagnostics-last-event");
 const diagnosticsCopy = byId<HTMLButtonElement>("diagnostics-copy");
@@ -69,6 +70,7 @@ const integrationsOpen = byId<HTMLButtonElement>("integrations-open");
 const integrationsBack = byId<HTMLButtonElement>("integrations-back");
 const integrationEnvironment = byId<HTMLElement>("integration-environment");
 const integrationCodex = byId<HTMLElement>("integration-codex");
+const integrationCursor = byId<HTMLElement>("integration-cursor");
 const integrationClaude = byId<HTMLElement>("integration-claude");
 const integrationInstall = byId<HTMLButtonElement>("integration-install");
 const integrationUninstall = byId<HTMLButtonElement>("integration-uninstall");
@@ -319,7 +321,7 @@ function timestampLabel(value: string | null): string {
 
 function providerDiagnosticsLabel(
   snapshot: DiagnosticsSnapshot,
-  provider: "codex" | "claude-code"
+  provider: "codex" | "claude-code" | "cursor"
 ): string {
   const diagnostics = snapshot.providers.find((value) => value.provider === provider);
   if (diagnostics === undefined) return "Not detected";
@@ -335,13 +337,15 @@ function renderDiagnostics(snapshot: DiagnosticsSnapshot): void {
   diagnosticsLastSnapshot.textContent = timestampLabel(snapshot.collector.lastSnapshotAt);
   diagnosticsCodex.textContent = providerDiagnosticsLabel(snapshot, "codex");
   diagnosticsClaude.textContent = providerDiagnosticsLabel(snapshot, "claude-code");
+  diagnosticsCursor.textContent = providerDiagnosticsLabel(snapshot, "cursor");
   diagnosticsLastEvent.textContent =
     snapshot.collector.lastEventType === null
       ? "No lifecycle event received"
       : `${snapshot.collector.lastEventType} · ${timestampLabel(snapshot.collector.lastEventAt)}`;
   for (const [element, provider] of [
     [diagnosticsCodex, "codex"],
-    [diagnosticsClaude, "claude-code"]
+    [diagnosticsClaude, "claude-code"],
+    [diagnosticsCursor, "cursor"]
   ] as const) {
     const value = snapshot.providers.find((candidate) => candidate.provider === provider);
     element.title = value?.capabilities.length
@@ -360,7 +364,7 @@ async function refreshDiagnostics(): Promise<void> {
 
 function providerIntegrationLabel(
   status: IntegrationStatus,
-  provider: "codex" | "claude-code"
+  provider: "codex" | "claude-code" | "cursor"
 ): string {
   const value = status.providers.find((candidate) => candidate.provider === provider);
   if (value === undefined) return "Not detected";
@@ -370,9 +374,10 @@ function providerIntegrationLabel(
 }
 
 function renderIntegrationStatus(status: IntegrationStatus): void {
-  integrationEnvironment.textContent = status.environment === "wsl" ? "Windows overlay · WSL agents" : "Native";
+  integrationEnvironment.textContent = status.environment === "wsl" ? "Windows overlay · native and WSL agents" : "Native";
   integrationCodex.textContent = providerIntegrationLabel(status, "codex");
   integrationClaude.textContent = providerIntegrationLabel(status, "claude-code");
+  integrationCursor.textContent = providerIntegrationLabel(status, "cursor");
   integrationUninstall.disabled = !status.providers.some((provider) => provider.installed);
 }
 
@@ -469,7 +474,7 @@ function createProviderIcon(agent: AgentStatus): HTMLSpanElement {
   const image = document.createElement("img");
   image.alt = "";
   image.src =
-    presentation.icon === "claude"
+    presentation.icon === "cursor" ? "assets/cursor-symbol.svg" : presentation.icon === "claude"
       ? "assets/claude-logo.svg"
       : "assets/openai-logo.svg";
   image.decoding = "async";

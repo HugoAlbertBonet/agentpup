@@ -8,6 +8,10 @@ import {
 } from "./collector-bridge.js";
 
 describe("collector process launch", () => {
+  it("can collect native Windows hooks without starting WSL", () => {
+    expect(createCollectorLaunch("win32", "C:\\runtime\\collector.cjs", "Ubuntu", "electron.exe", true))
+      .toEqual({ executable: "electron.exe", arguments: ["C:\\runtime\\collector.cjs"], electronAsNode: true });
+  });
   it("uses WSL for the native Windows host", () => {
     expect(createCollectorLaunch("win32", "/runtime/collector.cjs", "Ubuntu", "electron.exe"))
       .toEqual({

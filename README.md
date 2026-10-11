@@ -1,6 +1,6 @@
 # AgentPup
 
-AgentPup is an early Windows desktop companion for seeing local Claude Code and Codex activity. It combines a transparent Electron overlay and deterministic provider-independent status engine with OpenPets-compatible animated designs.
+AgentPup is an early Windows desktop companion for seeing local Claude Code, Codex, and Cursor activity. It combines a transparent Electron overlay and deterministic provider-independent status engine with OpenPets-compatible animated designs.
 
 Its focus is trustworthy attention state for concurrent coding agents:
 distinguishing work, unresolved human input, finished results, interruptions,
@@ -8,6 +8,39 @@ and disconnected collectors without reading prompt or tool bodies. The first
 supported setup is a native Windows overlay monitoring agents in Windows and WSL.
 
 Agent monitoring stays local and omits prompt and tool bodies. Pet gallery access is optional; imported designs are stored in the operating system's application-data directory and require no AI subscription or API key.
+
+## Cursor agents
+
+Cursor support uses local [Cursor lifecycle hooks](https://cursor.com/docs/hooks).
+After rebuilding and restarting AgentPup, open **Pet settings → Agent
+integrations → Install or repair**. On Windows, this also installs Cursor's hooks
+in the native Windows user's `.cursor/hooks.json` and starts a native collector
+alongside the existing WSL collector. Cursor agents running in WSL use the WSL
+user's configuration. On macOS/Linux, setup uses the current native user home.
+
+For Cursor-only setup from the terminal where Cursor runs:
+
+```sh
+npm run integration:preview -- --provider=cursor
+npm run integration:setup -- --provider=cursor
+```
+
+Start a new Cursor conversation, send a prompt, and verify green while working,
+orange after completion, and an interrupted or failed entry after cancellation
+or an error. Opening a conversation alone does not establish working state.
+Existing hooks are preserved, setup is idempotent, and
+`npm run integration:uninstall -- --provider=cursor` removes only AgentPup's
+Cursor entries. Cursor appears in the activity list, integrations, and diagnostics;
+version detection uses `cursor-agent` when that CLI is installed.
+
+Coverage currently includes submitted prompts, terminal stop status, session
+end, and child stop events that carry a stable subagent ID. Cursor permission
+dialogs and structured questions are not claimed: generic pre-tool events do
+not prove human input is pending, and permission-capable subagent start hooks
+are not registered. Cloud/remote agents require a collector in their execution
+environment and are outside this local integration. Cursor transcript databases
+are not read; recovery uses the sanitized hook inbox. Live Cursor acceptance is
+pending; see [docs/VALIDATION.md](docs/VALIDATION.md).
 
 ## Development setup
 

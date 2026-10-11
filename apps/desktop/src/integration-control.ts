@@ -1,5 +1,5 @@
 export type IntegrationEnvironment = "wsl" | "native";
-export type IntegrationProvider = "codex" | "claude-code";
+export type IntegrationProvider = "codex" | "claude-code" | "cursor";
 
 export interface ProviderIntegrationStatus {
   readonly provider: IntegrationProvider;
@@ -45,7 +45,7 @@ export function parseIntegrationStatus(source: string): IntegrationStatus | null
     const provider = object(candidate);
     if (
       provider === undefined ||
-      (provider.provider !== "codex" && provider.provider !== "claude-code") ||
+      (provider.provider !== "codex" && provider.provider !== "claude-code" && provider.provider !== "cursor") ||
       (provider.version !== null && typeof provider.version !== "string") ||
       typeof provider.installed !== "boolean" ||
       typeof provider.valid !== "boolean"

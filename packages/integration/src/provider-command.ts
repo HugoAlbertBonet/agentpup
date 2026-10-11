@@ -12,14 +12,14 @@ function executable(candidate: string): boolean {
   }
 }
 
-function executableNames(name: "codex" | "claude"): readonly string[] {
+function executableNames(name: "codex" | "claude" | "cursor-agent"): readonly string[] {
   return process.platform === "win32"
     ? [`${name}.exe`, `${name}.cmd`, `${name}.bat`, name]
     : [name];
 }
 
 export function resolveProviderExecutable(
-  name: "codex" | "claude",
+  name: "codex" | "claude" | "cursor-agent",
   home = os.homedir(),
   pathValue = process.env.PATH ?? ""
 ): string | null {
@@ -53,7 +53,7 @@ export function resolveProviderExecutable(
 }
 
 export function providerVersion(
-  name: "codex" | "claude",
+  name: "codex" | "claude" | "cursor-agent",
   home = os.homedir(),
   pathValue = process.env.PATH ?? ""
 ): string | null {

@@ -10,7 +10,7 @@ const MAX_INPUT_BYTES = 1024 * 1024;
 function providerArgument(): Provider | undefined {
   const argument = process.argv.find((value) => value.startsWith("--provider="));
   const provider = argument?.slice("--provider=".length);
-  return provider === "codex" || provider === "claude-code" ? provider : undefined;
+  return provider === "codex" || provider === "claude-code" || provider === "cursor" ? provider : undefined;
 }
 
 async function readInput(): Promise<unknown> {

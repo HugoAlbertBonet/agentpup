@@ -1,4 +1,4 @@
-export type Provider = "claude-code" | "codex";
+export type Provider = "claude-code" | "codex" | "cursor";
 
 export type Activity =
   | "working"

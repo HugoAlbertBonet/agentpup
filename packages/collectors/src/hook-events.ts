@@ -7,6 +7,7 @@ import type {
   LiveRequestSnapshot,
   LiveSessionSnapshot
 } from "./transcript-adapters.js";
+import { normalizeCursorHook } from "./cursor-hooks.js";
 
 type JsonObject = Record<string, unknown>;
 const CODEX_APPROVAL_CONFIRMATION_GRACE_MS = 2_000;
@@ -15,6 +16,7 @@ export type HookEventKind =
   | "agent.started"
   | "agent.interrupted"
   | "agent.ended"
+  | "agent.failed"
   | "request.opened"
   | "request.resolved"
   | "result.ready";
@@ -72,6 +74,7 @@ export function normalizeHookPayload(
 ): HookEnvelope | null {
   const payload = object(value);
   if (payload === undefined) return null;
+  if (provider === "cursor") return normalizeCursorHook(payload, observedAt);
   const hookName = string(payload.hook_event_name) ?? string(payload.hookEventName);
   const sessionId = string(payload.session_id) ?? string(payload.sessionId);
   if (hookName === undefined || sessionId === undefined) return null;
@@ -182,11 +185,12 @@ export function isHookEnvelope(value: unknown): value is HookEnvelope {
   if (event === undefined) return false;
   return (
     event.protocolVersion === 1 &&
-    ["codex", "claude-code"].includes(String(event.provider)) &&
+    ["codex", "claude-code", "cursor"].includes(String(event.provider)) &&
     [
       "agent.started",
       "agent.interrupted",
       "agent.ended",
+      "agent.failed",
       "request.opened",
       "request.resolved",
       "result.ready"
@@ -255,6 +259,8 @@ export function reconcileHookSnapshots(
         requests: []
       };
     if (event.observedAt < snapshot.observedAt) continue;
+    if (event.provider === "cursor" && existing !== undefined &&
+        event.event !== "agent.started" && event.turnId !== snapshot.turnId) continue;
     snapshot.observedAt = event.observedAt;
     snapshot.turnId = event.turnId;
     if (event.project !== "Unknown project") snapshot.project = event.project;
@@ -267,6 +273,11 @@ export function reconcileHookSnapshots(
         break;
       case "agent.interrupted":
         snapshot.activity = "interrupted";
+        snapshot.resultReady = false;
+        snapshot.requests = [];
+        break;
+      case "agent.failed":
+        snapshot.activity = "failed";
         snapshot.resultReady = false;
         snapshot.requests = [];
         break;

@@ -85,6 +85,10 @@ describe("privacy-safe desktop diagnostics", () => {
           hookConfiguration: "invalid",
           hookEventsObserved: false,
           capabilities: []
+        },
+        {
+          provider: "cursor", version: null, hookConfiguration: "unknown",
+          hookEventsObserved: false, capabilities: []
         }
       ]
     });

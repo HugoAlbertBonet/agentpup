@@ -1,4 +1,4 @@
-import { link, mkdir, mkdtemp } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -16,8 +16,8 @@ describe("provider executable discovery", () => {
     const newer = path.join(home, ".nvm", "versions", "node", "v24.16.0", "bin");
     await mkdir(older, { recursive: true });
     await mkdir(newer, { recursive: true });
-    await link(process.execPath, path.join(older, executableName("codex")));
-    await link(process.execPath, path.join(newer, executableName("codex")));
+    await copyFile(process.execPath, path.join(older, executableName("codex")));
+    await copyFile(process.execPath, path.join(newer, executableName("codex")));
 
     expect(resolveProviderExecutable("codex", home, "/usr/bin")).toBe(
       path.join(newer, executableName("codex"))
@@ -29,7 +29,7 @@ describe("provider executable discovery", () => {
     const home = await mkdtemp(path.join(os.tmpdir(), "claudepet-provider-path-"));
     const bin = path.join(home, "bin");
     await mkdir(bin);
-    await link(process.execPath, path.join(bin, executableName("claude")));
+    await copyFile(process.execPath, path.join(bin, executableName("claude")));
 
     expect(resolveProviderExecutable("claude", home, bin)).toBe(
       path.join(bin, executableName("claude"))

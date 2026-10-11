@@ -6,10 +6,11 @@ import type {
 
 export interface ProviderPresentation {
   label: string;
-  icon: "claude" | "codex";
+  icon: "claude" | "codex" | "cursor";
 }
 
 export function providerPresentation(provider: Provider): ProviderPresentation {
+  if (provider === "cursor") return { label: "Cursor", icon: "cursor" };
   return provider === "claude-code"
     ? { label: "Claude Code", icon: "claude" }
     : { label: "Codex", icon: "codex" };

@@ -16,6 +16,7 @@ import {
   mergeProviderHooks,
   removeAgentPupHooks,
   type HookGroup,
+  type HookHandler,
   type HookProvider,
   type HookSettings
 } from "./config.js";
@@ -30,6 +31,8 @@ export interface InstallOptions {
   home: string;
   codexHome?: string;
   claudeHome?: string;
+  cursorHome?: string;
+  providers?: HookProvider[];
   nodePath: string;
   hookPath: string;
   deployedHookPath?: string;
@@ -54,6 +57,8 @@ export interface IntegrationLocations {
   home: string;
   codexHome?: string;
   claudeHome?: string;
+  cursorHome?: string;
+  providers?: HookProvider[];
 }
 
 function locations(value: string | IntegrationLocations): IntegrationLocations {
@@ -62,7 +67,7 @@ function locations(value: string | IntegrationLocations): IntegrationLocations {
 
 function providerFiles(value: string | IntegrationLocations): ProviderFile[] {
   const location = locations(value);
-  return [
+  const files: ProviderFile[] = [
     {
       provider: "claude-code",
       filePath: path.join(location.claudeHome ?? path.join(location.home, ".claude"), "settings.json"),
@@ -72,8 +77,14 @@ function providerFiles(value: string | IntegrationLocations): ProviderFile[] {
       provider: "codex",
       filePath: path.join(location.codexHome ?? path.join(location.home, ".codex"), "hooks.json"),
       defaultSettings: { description: "AgentPup local activity observer" }
+    },
+    {
+      provider: "cursor",
+      filePath: path.join(location.cursorHome ?? path.join(location.home, ".cursor"), "hooks.json"),
+      defaultSettings: { version: 1 }
     }
   ];
+  return location.providers === undefined ? files : files.filter(file => location.providers!.includes(file.provider));
 }
 
 function object(value: unknown): Record<string, unknown> | undefined {
@@ -82,13 +93,28 @@ function object(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
-function parseSettings(source: string): HookSettings {
+function parseSettings(source: string, provider?: HookProvider): HookSettings {
   const value: unknown = JSON.parse(source);
   const settings = object(value);
   if (settings === undefined) throw new Error("Settings root must be a JSON object");
+  if (provider === "cursor" && settings.version !== 1) throw new Error("Unsupported Cursor hooks version");
   if (settings.hooks === undefined) return settings;
   const hooks = object(settings.hooks);
   if (hooks === undefined) throw new Error("The hooks field must be a JSON object");
+  if (provider === "cursor") {
+    const wrapped: Record<string, HookGroup[]> = {};
+    for (const [event, handlers] of Object.entries(hooks)) {
+      if (!Array.isArray(handlers)) throw new Error(`${event} hooks must be an array`);
+      wrapped[event] = handlers.map(value => {
+        const handler = object(value);
+        if (!handler || (handler.type !== "prompt" && typeof handler.command !== "string")) {
+          throw new Error(`${event} contains an invalid Cursor handler`);
+        }
+        return { hooks: [handler as unknown as HookHandler] };
+      });
+    }
+    return { ...settings, hooks: wrapped };
+  }
   for (const [event, groupsValue] of Object.entries(hooks)) {
     if (!Array.isArray(groupsValue)) throw new Error(`${event} hooks must be an array`);
     for (const groupValue of groupsValue) {
@@ -113,7 +139,7 @@ async function readSettings(file: ProviderFile): Promise<{
 }> {
   try {
     const source = await readFile(file.filePath, "utf8");
-    return { source, settings: parseSettings(source) };
+    return { source, settings: parseSettings(source, file.provider) };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return { source: null, settings: structuredClone(file.defaultSettings) };
@@ -122,8 +148,11 @@ async function readSettings(file: ProviderFile): Promise<{
   }
 }
 
-function serialize(settings: HookSettings): string {
-  return `${JSON.stringify(settings, null, 2)}\n`;
+function serialize(settings: HookSettings, provider?: HookProvider): string {
+  const output = provider === "cursor" && settings.hooks !== undefined
+    ? { ...settings, hooks: Object.fromEntries(Object.entries(settings.hooks).map(([event, groups]) => [event, groups.flatMap(group => group.hooks)])) }
+    : settings;
+  return `${JSON.stringify(output, null, 2)}\n`;
 }
 
 async function nextBackupPath(filePath: string, stamp: string): Promise<string> {
@@ -156,7 +185,7 @@ async function writeSettings(
     await copyFile(file.filePath, backup);
   }
   const temporary = `${file.filePath}.agentpup-${process.pid}-${randomUUID()}.tmp`;
-  await writeFile(temporary, serialize(settings), { encoding: "utf8", mode: 0o600, flag: "wx" });
+  await writeFile(temporary, serialize(settings, file.provider), { encoding: "utf8", mode: 0o600, flag: "wx" });
   await rename(temporary, file.filePath);
   return backup;
 }
@@ -215,6 +244,9 @@ export async function uninstallIntegration(
     if (backup !== null) report.backups.push(backup);
   }
   if (deployedHookPath !== undefined) {
+    const { providers: _selectedProviders, ...allLocations } = locations(location);
+    const remaining = await inspectIntegration(allLocations);
+    if (remaining.some(provider => provider.installed || !provider.valid)) return report;
     try {
       await unlink(deployedHookPath);
     } catch (error) {

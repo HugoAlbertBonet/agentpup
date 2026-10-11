@@ -48,6 +48,7 @@ export interface CollectorBridgeOptions {
   platform: NodeJS.Platform;
   collectorPath: string;
   nativeExecutable?: string;
+  native?: boolean;
   wslDistro?: string;
   onLine(line: string): boolean;
   onDisconnect(reason: string, retryDelayMs: number): void;
@@ -63,9 +64,10 @@ export function createCollectorLaunch(
   platform: NodeJS.Platform,
   collectorPath: string,
   wslDistro: string | undefined,
-  nativeExecutable: string
+  nativeExecutable: string,
+  native = false
 ): CollectorLaunch {
-  if (platform === "win32") {
+  if (platform === "win32" && !native) {
     return {
       executable: "wsl.exe",
       arguments: [
@@ -166,7 +168,8 @@ export function startCollectorBridge(options: CollectorBridgeOptions): Collector
     options.platform,
     options.collectorPath,
     options.wslDistro,
-    options.nativeExecutable ?? process.execPath
+    options.nativeExecutable ?? process.execPath,
+    options.native
   );
   return startCollectorSupervisor({
     connect(callbacks) {

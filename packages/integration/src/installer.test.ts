@@ -49,7 +49,7 @@ describe("provider integration installer", () => {
     const first = await installIntegration(options);
     const second = await installIntegration(options);
 
-    expect(first.changed).toEqual(["claude-code", "codex"]);
+    expect(first.changed).toEqual(["claude-code", "codex", "cursor"]);
     expect(first.backups).toHaveLength(2);
     expect(second.changed).toEqual([]);
     expect((await inspectIntegration(home)).every((item) => item.installed)).toBe(true);

@@ -450,3 +450,14 @@ remains unavailable in the current environment.
   compositor scheduling or physical scanout.
 - GPU, battery, long-duration stability, end-to-end provider-source latency, and
   compositor-visible latency remain unmeasured and are not inferred.
+
+## Cursor compatibility (2026-10-10)
+
+- Full validation passed: 41 test files, 191 tests, TypeScript checking, and
+  production builds. The built helper delivered synthetic Cursor submitted-prompt
+  and completed-stop events to an isolated temporary inbox, returned neutral JSON,
+  and stripped private payload bodies.
+- Automated checks cover submitted prompt identity, privacy stripping, completed/aborted/error stops, late stops from older generations, stable child-stop identity, status protocol acceptance, and aggregate counts.
+- Installer checks cover Cursor flat handler arrays, preservation of unrelated settings/hooks, idempotence, selective Cursor-only installation/removal, and encoded Windows commands with literal executable paths.
+- Native Windows collection can run alongside WSL without launching WSL for the native stream. Diagnostics merge retains observed/configured coverage across both environments.
+- Live Cursor desktop/CLI delivery, Windows helper timeout, cancellations, multi-conversation activity, and native collector coexistence remain unvalidated on a real Cursor frontend. Generic tool execution is intentionally not classified as human input. Cursor permission dialogs, structured questions, active child discovery, and cloud/remote monitoring are not claimed.

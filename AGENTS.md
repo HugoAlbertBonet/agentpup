@@ -2,7 +2,7 @@
 
 ## Main objective
 
-Build a delightful desktop virtual pet that moves naturally above ordinary application windows and gives an immediate, trustworthy view of Claude Code and Codex activity. At a glance, users should know how many agents are working, which need human input, and which have finished. The pet must remain useful while the user works in other applications.
+Build a delightful desktop virtual pet that moves naturally above ordinary application windows and gives an immediate, trustworthy view of Claude Code, Codex, and Cursor activity. At a glance, users should know how many agents are working, which need human input, and which have finished. The pet must remain useful while the user works in other applications.
 
 The project must be easy to clone from GitHub and start on a new computer. A fresh checkout must not depend on the original author's paths, installed sibling projects, private assets, secrets, or local configuration. Provide a short, reproducible development setup and packaged releases for non-developers. The pet itself must not require an AI subscription, API key, or cloud service to run; monitoring uses agents the user already runs.
 
@@ -39,6 +39,8 @@ Follow a Test-Driven Development philosophy where accurate tests are built befor
 - Keep optional native platform integrations behind small interfaces. Verify platform capabilities instead of assuming equivalent APIs behave identically.
 
 ## Agent integration rules
+
+- Cursor uses local lifecycle hooks and hook-inbox recovery, with a native Windows collector alongside WSL. Permission dialogs, structured questions, active child discovery, and cloud/remote Cursor agents are not yet claimed. See README and the validation ledger before extending coverage; never interpret ordinary Cursor tool execution as a human approval request.
 
 - Prefer documented runtime events and lifecycle hooks. Use watched transcripts or read-only metadata only for discovery, recovery, and explicitly labeled fallback behavior.
 - Check installed versions and actual hook/event coverage. Current web documentation can describe features absent from an installed binary.

@@ -1,7 +1,7 @@
 export const AGENTPUP_HOOK_MARKER = "--agentpup-hook-v1";
 export const LEGACY_CLAUDEPET_HOOK_MARKER = "--claudepet-hook-v1";
 
-export type HookProvider = "codex" | "claude-code";
+export type HookProvider = "codex" | "claude-code" | "cursor";
 
 export interface HookHandler {
   [key: string]: unknown;
@@ -25,11 +25,14 @@ function shellQuote(value: string): string {
 }
 
 function owned(handler: HookHandler): boolean {
+  if (typeof handler.command !== "string") return false;
+  const encoded = handler.command?.match(/-EncodedCommand ([A-Za-z0-9+/=]+)$/)?.[1];
+  const command = encoded === undefined ? handler.command : Buffer.from(encoded, "base64").toString("utf16le");
   return (
-    handler.type === "command" &&
+    (handler.type === "command" || handler.type === undefined) &&
     typeof handler.command === "string" &&
     [AGENTPUP_HOOK_MARKER, LEGACY_CLAUDEPET_HOOK_MARKER].some((marker) =>
-      handler.command!.includes(marker)
+      command!.includes(marker)
     )
   );
 }
@@ -48,9 +51,21 @@ const commonEvents: ReadonlyArray<{ event: string; matcher?: string }> = [
 export function buildProviderHooks(
   provider: HookProvider,
   nodePath: string,
-  hookPath: string
+  hookPath: string,
+  platform: NodeJS.Platform = process.platform
 ): HookSettings {
-  const command = `${shellQuote(nodePath)} ${shellQuote(hookPath)} ${AGENTPUP_HOOK_MARKER} --provider=${provider}`;
+  const command = platform === "win32" && /^[A-Za-z]:[\\/]/.test(nodePath)
+    ? `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${Buffer.from(
+        `$env:ELECTRON_RUN_AS_NODE='1'; & '${nodePath.replaceAll("'", "''")}' '${hookPath.replaceAll("'", "''")}' ${AGENTPUP_HOOK_MARKER} --provider=${provider}`, "utf16le"
+      ).toString("base64")}`
+    : `${shellQuote(nodePath)} ${shellQuote(hookPath)} ${AGENTPUP_HOOK_MARKER} --provider=${provider}`;
+  if (provider === "cursor") {
+    return { version: 1, hooks: Object.fromEntries(
+      ["beforeSubmitPrompt", "stop", "sessionEnd", "subagentStop"].map(event =>
+        [event, [{ hooks: [{ type: "command", command, timeout: 3 }] }]]
+      )
+    ) };
+  }
   const eventSpecs = [
     ...commonEvents,
     ...(provider === "codex"
