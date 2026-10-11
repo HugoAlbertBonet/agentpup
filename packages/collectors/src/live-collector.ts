@@ -381,7 +381,7 @@ function validCollectorDiagnostics(value: unknown): value is CollectorRuntimeDia
     Number.isNaN(Date.parse(diagnostics.observedAt)) ||
     typeof diagnostics.transcriptFallback !== "boolean" ||
     !Array.isArray(diagnostics.providers) ||
-    diagnostics.providers.length > 2
+    diagnostics.providers.length > 3
   ) {
     return false;
   }

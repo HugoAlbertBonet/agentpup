@@ -22,3 +22,12 @@ project: https://github.com/simple-icons/simple-icons/blob/develop/icons/claude.
 Simple Icons is provided under CC0 1.0. Claude and its logo are trademarks of
 Anthropic. The mark is displayed only to identify activity originating from
 Claude Code and does not imply endorsement.
+
+The Cursor cube mark used to identify Cursor entries is the unchanged
+`General Logos/Cube/SVG/CUBE_25D.svg` from Cursor's official brand asset archive:
+https://cursor.com/brand
+https://ptht05hbb1ssoooe.public.blob.vercel-storage.com/assets/brand/cursor-brand-assets.zip
+
+Cursor and its logo belong to Anysphere. The mark is displayed only to identify
+activity originating from Cursor and does not imply endorsement. Provider marks
+are not covered by AgentPup's MIT license.

@@ -453,6 +453,29 @@ remains unavailable in the current environment.
 
 ## Cursor compatibility (2026-10-10)
 
+- The user confirmed Codex and Claude Code monitoring recovered after the
+  snapshot-validator fix. Cursor's placeholder pointer was then replaced with
+  the official cube SVG from its brand archive, with source attribution in
+  `THIRD_PARTY_NOTICES.md`. The Windows development build was refreshed and
+  restarted; both the SVG and its renderer reference are deployed. The user
+  confirmed the new Cursor mark displays correctly.
+- After refreshing the native app, the user reported existing Codex and Claude
+  Code activity missing. The desktop snapshot validator still limited diagnostic
+  rows to two, rejecting every new three-provider collector snapshot. A failing
+  regression test reproduced this; the validator now accepts three supported,
+  unique providers while rejecting duplicates and unsupported providers.
+  `npm run check` passed all 192 tests across 41 files, typechecking, and builds.
+  A live WSL collector smoke check observed Codex 0.157.1 and Claude Code 2.1.161,
+  configured hooks and observed hook events for both, and eight discovered
+  agents. The user confirmed monitoring recovered after restarting.
+- The user reported Cursor absent from both integrations and activity after
+  restarting. Inspection confirmed the running native Windows development cache
+  still had the previous HTML without the Cursor integration row. Running
+  `npm run dev:windows` rebuilt, refreshed that cache, and restarted the app;
+  the deployed HTML now contains Cursor. Native integration inspection reports
+  Cursor hooks installed and valid. Cursor CLI version is not detected; this
+  does not establish whether the Cursor desktop app is installed. Live event
+  delivery still requires a new Cursor agent request.
 - Full validation passed: 41 test files, 191 tests, TypeScript checking, and
   production builds. The built helper delivered synthetic Cursor submitted-prompt
   and completed-stop events to an isolated temporary inbox, returned neutral JSON,

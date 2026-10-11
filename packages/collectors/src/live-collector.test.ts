@@ -94,6 +94,31 @@ describe("live transcript collector", () => {
     expect(JSON.stringify(events)).not.toContain("PRIVATE_");
   });
 
+  it("accepts all three provider diagnostics without dropping agent activity", () => {
+    const observedAt = "2026-10-10T10:00:00.000Z";
+    const events = createSnapshotEvents([], ["wsl:Ubuntu:codex", "wsl:Ubuntu:claude-code", "wsl:Ubuntu:cursor"], observedAt);
+    const providers = ["codex", "claude-code", "cursor"].map(provider => ({
+      provider,
+      version: null,
+      hookConfiguration: "configured",
+      hookEventsObserved: true
+    }));
+    const message = {
+      protocolVersion: 1,
+      type: "snapshot",
+      events,
+      diagnostics: { observedAt, transcriptFallback: true, providers }
+    };
+
+    expect(parseCollectorMessage(JSON.stringify(message))).toEqual(message);
+    for (const provider of [providers[0], { ...providers[0], provider: "unsupported" }]) {
+      expect(parseCollectorMessage(JSON.stringify({
+        ...message,
+        diagnostics: { ...message.diagnostics, providers: [providers[0], provider] }
+      }))).toBeNull();
+    }
+  });
+
   it("accepts only versioned snapshot protocol messages", () => {
     const diagnostics = {
       observedAt: "2026-09-27T10:00:00.000Z",

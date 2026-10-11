@@ -474,7 +474,7 @@ function createProviderIcon(agent: AgentStatus): HTMLSpanElement {
   const image = document.createElement("img");
   image.alt = "";
   image.src =
-    presentation.icon === "cursor" ? "assets/cursor-symbol.svg" : presentation.icon === "claude"
+    presentation.icon === "cursor" ? "assets/cursor-logo.svg" : presentation.icon === "claude"
       ? "assets/claude-logo.svg"
       : "assets/openai-logo.svg";
   image.decoding = "async";
