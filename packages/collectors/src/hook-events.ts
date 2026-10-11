@@ -10,7 +10,6 @@ import type {
 import { normalizeCursorHook } from "./cursor-hooks.js";
 
 type JsonObject = Record<string, unknown>;
-const CODEX_APPROVAL_CONFIRMATION_GRACE_MS = 2_000;
 
 export type HookEventKind =
   | "agent.started"
@@ -205,7 +204,7 @@ export function reconcileHookSnapshots(
   transcriptSnapshots: readonly LiveSessionSnapshot[],
   hookEvents: readonly HookEnvelope[],
   collectorPrefix: string,
-  now = Date.now()
+  _now = Date.now()
 ): LiveSessionSnapshot[] {
   const snapshots = new Map<string, LiveSessionSnapshot>();
   const keyOf = (provider: Provider, sessionId: string, agentId: string): string =>
@@ -296,16 +295,13 @@ export function reconcileHookSnapshots(
         const existingRequest = snapshot.requests.find(
           (current) => current.requestId === event.requestId
         );
-        const rawEventConfidence =
+        // Permission hooks run before all automatic policies finish. Elapsed
+        // time cannot establish that a human-facing approval prompt is open.
+        const eventConfidence =
           event.confidence ??
           (event.provider === "codex" && event.eventId.includes(":PermissionRequest:")
             ? "provisional"
             : "confirmed");
-        const eventConfidence =
-          event.confidence === "provisional" &&
-          now - Date.parse(event.observedAt) >= CODEX_APPROVAL_CONFIRMATION_GRACE_MS
-            ? "confirmed"
-            : rawEventConfidence;
         const request: LiveRequestSnapshot = {
           requestId: event.requestId,
           kind: event.requestKind,

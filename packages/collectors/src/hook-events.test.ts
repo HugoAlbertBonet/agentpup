@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeHookPayload, reconcileHookSnapshots } from "./hook-events.js";
+import { aggregateStatus, replayEvents } from "../../status/src/index.js";
+import { createSnapshotEvents } from "./live-collector.js";
 
 describe("provider hook normalization", () => {
   it("does not treat opening a Claude session as submitted work", () => {
@@ -245,14 +247,14 @@ describe("provider hook normalization", () => {
       requests: [{ kind: "approval", confidence: "provisional" }]
     });
 
-    const confirmedWaiting = reconcileHookSnapshots(
+    const unconfirmedWaiting = reconcileHookSnapshots(
       [base],
       [opened],
       "wsl:Ubuntu",
       Date.parse("2026-09-25T12:00:04.000Z")
     );
-    expect(confirmedWaiting[0]).toMatchObject({
-      requests: [{ kind: "approval", confidence: "confirmed" }]
+    expect(unconfirmedWaiting[0]).toMatchObject({
+      requests: [{ kind: "approval", confidence: "provisional" }]
     });
 
     const legacyOpened = { ...opened };
@@ -280,6 +282,38 @@ describe("provider hook normalization", () => {
       "2026-09-25T12:00:02.000Z"
     )!;
     expect(reconcileHookSnapshots(waiting, [resolved], "wsl:Ubuntu")[0]!.requests).toEqual([]);
+  });
+
+  it("does not alert during a slow automatic Codex review after PreToolUse", () => {
+    const payload = { session_id: "automatic-review", turn_id: "turn-1", tool_name: "Bash" };
+    const started = normalizeHookPayload("codex", {
+      ...payload, hook_event_name: "UserPromptSubmit"
+    }, "2026-10-10T12:00:00.000Z")!;
+    const beforeTool = normalizeHookPayload("codex", {
+      ...payload, hook_event_name: "PreToolUse"
+    }, "2026-10-10T12:00:01.000Z")!;
+    const permission = normalizeHookPayload("codex", {
+      ...payload, hook_event_name: "PermissionRequest"
+    }, "2026-10-10T12:00:02.000Z")!;
+    const resolved = normalizeHookPayload("codex", {
+      ...payload, hook_event_name: "PostToolUse"
+    }, "2026-10-10T12:01:03.000Z")!;
+    const events = [started, beforeTool, permission];
+    for (const seconds of [5, 30, 60]) {
+      const snapshots = reconcileHookSnapshots([], events, "wsl:Ubuntu",
+        Date.parse("2026-10-10T12:00:00.000Z") + seconds * 1000);
+      expect(snapshots[0]!.requests).toMatchObject([{ confidence: "provisional" }]);
+      const status = replayEvents(createSnapshotEvents(snapshots, ["wsl:Ubuntu:codex"],
+        "2026-10-10T12:01:00.000Z"));
+      expect(aggregateStatus(status)).toMatchObject({ working: 1, needsYou: 0 });
+    }
+    expect(reconcileHookSnapshots([], [...events, resolved], "wsl:Ubuntu")[0]!.requests).toEqual([]);
+    const confirmed = reconcileHookSnapshots([], [...events, {
+      ...permission, confidence: "confirmed" as const,
+      eventId: "explicit-confirmation", observedAt: "2026-10-10T12:00:04.000Z"
+    }], "wsl:Ubuntu");
+    expect(aggregateStatus(replayEvents(createSnapshotEvents(confirmed,
+      ["wsl:Ubuntu:codex"], "2026-10-10T12:00:05.000Z")))).toMatchObject({ needsYou: 1 });
   });
 
   it("ignores retained SessionStart events created by older hook versions", () => {

@@ -255,3 +255,14 @@ Platform priority is confirmed: Windows + WSL first, cross-platform later. The u
 ## Cursor compatibility (2026-10-10)
 
 Implemented local Cursor hook-based monitoring, flat `~/.cursor/hooks.json` configuration with preservation/backups/idempotent removal, stable conversation/generation identities, completion/cancellation/error handling, Cursor activity presentation and diagnostics, and simultaneous native Windows/WSL collectors. Cursor-only setup is available with `--provider=cursor`. Hook inbox recovery is used; Cursor transcript databases and cloud agents are outside this slice. Permission/structured-question coverage and active subagent discovery remain unclaimed. Live frontend acceptance is still required. Reference: [Cursor hooks](https://cursor.com/docs/hooks).
+
+## Codex automatic-review correction (2026-10-10)
+
+Removed elapsed-time confirmation of provisional Codex permission hooks after
+live events demonstrated `PreToolUse` → `PermissionRequest` → `PostToolUse`
+with automatic review lasting longer than two seconds. Pending hook evidence
+remains visible as unconfirmed without increasing needs-you. A verified signal
+that the frontend has actually opened a human approval dialog is still required
+to claim Codex command-approval attention coverage; structured-question attention
+is retained. Never substitute silence or elapsed time for this evidence.
+Reference: [official Codex hook semantics](https://learn.chatgpt.com/docs/hooks).

@@ -100,6 +100,12 @@ installations when the desktop process has a restricted non-login PATH.
 
 The hook helper writes sanitized lifecycle metadata to `~/.agentpup/events/` and immediately returns a neutral `{}` response. It never approves or denies a request, modifies tool input, adds model context, or calls an AI service, so monitoring consumes no model tokens. Hook failures are swallowed so the coding agent does not depend on AgentPup being available. During migration, the collector also reads the legacy `~/.claudepet/events/` inbox and installation replaces legacy owned hooks safely.
 
+Codex permission checks remain **unconfirmed** in the activity panel and do not
+trigger the red attention signal: automatic review or another hook may handle
+them without asking you. The current hook interface does not establish whether
+a human approval dialog is visible, so real Codex command approvals also remain
+unconfirmed. Codex structured questions still trigger attention normally.
+
 Automatic roaming is disabled in the default Windows run while mixed-DPI and multi-monitor positioning is being validated. Use the round-arrow button beside the pet to move it clockwise to the next corner of its current display. The vertical status bar stays nearest the screen edge, with the pet positioned inward from it.
 
 Finished, interrupted, and failed entries have an individual X in Agent

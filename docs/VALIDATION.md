@@ -42,16 +42,20 @@ lifecycle structure or aggregate counts.
 - Claude Code cancellation during a running Bash tool becomes interrupted. The
   transcript fallback recognizes the structured user-rejected tool result and
   ignores its linked synthetic trailing user record.
-- Codex permission requests appear and clear after one-time approval.
-- Codex `PermissionRequest` lifecycle hooks begin as provisional because they
-  run before Codex combines policy and hook decisions. An ordinary `PreToolUse`
-  clears an automatically approved request; one that remains blocked beyond the
-  two-second grace period becomes confirmed and triggers needs-you. Existing
-  installations must repair hooks once to add ordinary Codex pre-tool coverage.
+- Codex permission requests previously appeared and cleared after one-time
+  approval. The automatic-review false-alert correction below supersedes the
+  earlier time-based confirmation behavior; real approval attention coverage
+  needs an explicit human-facing pending signal.
+- Codex `PermissionRequest` lifecycle hooks remain provisional because they
+  run before Codex combines policy and hook decisions. Neither an unresolved
+  hook nor elapsed time proves a human approval dialog is visible. Local events
+  show `PreToolUse` before `PermissionRequest`, followed by `PostToolUse` after
+  automatic review; pre-tool delivery cannot confirm execution has started.
 - Retained events produced by the legacy helper do not contain enough evidence
   to distinguish an auto-approved command from a visible prompt. They now remain
   provisional instead of producing false needs-you alerts; new Codex sessions
-  use the repaired hook configuration and retain confirmed approval alerts.
+  also retain provisional approval evidence until resolution. Structured
+  question attention remains confirmed.
 - Codex structured questions create exactly one needs-you entry. Answering or
   cancelling the question clears it without leaving a duplicate request.
 - Codex turn cancellation becomes interrupted and does not create a ready result.
@@ -484,3 +488,21 @@ remains unavailable in the current environment.
 - Installer checks cover Cursor flat handler arrays, preservation of unrelated settings/hooks, idempotence, selective Cursor-only installation/removal, and encoded Windows commands with literal executable paths.
 - Native Windows collection can run alongside WSL without launching WSL for the native stream. Diagnostics merge retains observed/configured coverage across both environments.
 - Live Cursor desktop/CLI delivery, Windows helper timeout, cancellations, multi-conversation activity, and native collector coexistence remain unvalidated on a real Cursor frontend. Generic tool execution is intentionally not classified as human input. Cursor permission dialogs, structured questions, active child discovery, and cloud/remote monitoring are not claimed.
+
+## Codex automatic-review false attention (2026-10-10)
+
+- The user reported a red attention signal while Codex ran commands without
+  asking them for input. Sanitized local hook metadata showed `PreToolUse`
+  preceding `PermissionRequest`, with resolutions about three to ten seconds
+  later. The two-second confidence promotion could therefore alert while
+  automatic review was still handling the command.
+- Regression tests first reproduced the promotion. The corrected reducer
+  keeps unresolved permission hooks provisional at 5, 30, and 60 seconds,
+  preserves working without needs-you, clears evidence on tool output, and
+  still honors explicit confirmed request evidence.
+- `npm run check` passed 193 tests across 41 files, TypeScript checking, and
+  production builds. The native Windows development app was refreshed and
+  restarted with the corrected collector. User confirmation during automatic
+  review remains pending. Real Codex command approvals remain unconfirmed until
+  a verified human-facing pending source is available; structured questions
+  continue to provide confirmed attention.
