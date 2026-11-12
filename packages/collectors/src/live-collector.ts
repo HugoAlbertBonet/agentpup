@@ -176,8 +176,18 @@ export async function scanTranscriptSessions(
     ...claudeFiles.map((candidate) => parseCandidate(candidate, "claude-code", options))
   ]);
   const unique = new Map<string, LiveSessionSnapshot>();
+  const codexParents = new Map(snapshots.filter((value): value is LiveSessionSnapshot =>
+    value !== null && value.provider === "codex" && value.parentAgentId !== undefined)
+    .map(value => [value.agentId, value.sessionId]));
   for (const snapshot of snapshots) {
     if (snapshot === null) continue;
+    if (snapshot.provider === "codex" && snapshot.parentAgentId !== undefined) {
+      const visited = new Set([snapshot.agentId]);
+      while (codexParents.has(snapshot.sessionId) && !visited.has(snapshot.sessionId)) {
+        visited.add(snapshot.sessionId);
+        snapshot.sessionId = codexParents.get(snapshot.sessionId)!;
+      }
+    }
     if (snapshot.activity === "unknown" && snapshot.requests.length === 0) continue;
     const key = `${snapshot.provider}:${snapshot.sessionId}:${snapshot.agentId}`;
     const existing = unique.get(key);

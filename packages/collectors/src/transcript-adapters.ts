@@ -4,6 +4,7 @@ import type {
   Provider,
   RequestKind
 } from "../../status/src/index.js";
+import { sessionTitle } from "./session-names.js";
 
 const ACTIVE_EVIDENCE_MS = 30 * 60_000;
 
@@ -81,6 +82,8 @@ export function parseCodexTranscript(
   context: TranscriptAdapterContext
 ): LiveSessionSnapshot | null {
   let sessionId: string | undefined;
+  let parentThreadId: string | undefined;
+  let agentName: string | undefined;
   let cwd: string | undefined;
   let activity: Activity = "unknown";
   let turnId = "unknown-turn";
@@ -97,6 +100,11 @@ export function parseCodexTranscript(
 
     if (recordType === "session_meta" && payload !== undefined) {
       sessionId ??= string(payload.id);
+      const spawn = object(object(object(payload.source)?.subagent)?.thread_spawn);
+      if (object(payload.source)?.subagent !== undefined) {
+        parentThreadId ??= string(payload.parent_thread_id) ?? string(spawn?.parent_thread_id);
+      }
+      agentName ??= sessionTitle(payload.agent_nickname) ?? sessionTitle(spawn?.agent_nickname);
       cwd ??= string(payload.cwd);
       continue;
     }
@@ -158,14 +166,15 @@ export function parseCodexTranscript(
   return {
     provider: "codex",
     collectorId: context.collectorId,
-    sessionId,
-    agentId: "root",
-    displayName: `Session ${sessionId.slice(0, 8)}`,
+    sessionId: parentThreadId ?? sessionId,
+    agentId: parentThreadId ? sessionId : "root",
+    ...(parentThreadId ? { parentAgentId: "root" } : {}),
+    displayName: parentThreadId ? agentName ?? "Subagent" : "Untitled session",
     project: projectName(cwd),
     observedAt,
-    activity,
+    activity: parentThreadId && activity === "completed" ? "ended" : activity,
     turnId,
-    resultReady,
+    resultReady: parentThreadId ? false : resultReady,
     requests: [...pending.values()]
   };
 }
@@ -175,6 +184,7 @@ export function parseClaudeTranscript(
   context: TranscriptAdapterContext
 ): LiveSessionSnapshot | null {
   let sessionId: string | undefined;
+  let displayName: string | undefined;
   let cwd: string | undefined;
   let activity: Activity = "unknown";
   let turnId = "unknown-turn";
@@ -190,6 +200,7 @@ export function parseClaudeTranscript(
     cwd = string(record.cwd) ?? cwd;
     observedAt = timestamp(record, context.modifiedAt);
     const recordType = string(record.type);
+    if (recordType === "custom-title") displayName = sessionTitle(record.customTitle) ?? displayName;
     const message = object(record.message);
     const content = Array.isArray(message?.content) ? message.content : [];
     const origin = object(record.origin);
@@ -310,7 +321,7 @@ export function parseClaudeTranscript(
     collectorId: context.collectorId,
     sessionId,
     agentId: "root",
-    displayName: `Session ${sessionId.slice(0, 8)}`,
+    displayName: displayName ?? "Untitled session",
     project: projectName(cwd),
     observedAt,
     activity,

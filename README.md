@@ -100,11 +100,26 @@ installations when the desktop process has a restricted non-login PATH.
 
 The hook helper writes sanitized lifecycle metadata to `~/.agentpup/events/` and immediately returns a neutral `{}` response. It never approves or denies a request, modifies tool input, adds model context, or calls an AI service, so monitoring consumes no model tokens. Hook failures are swallowed so the coding agent does not depend on AgentPup being available. During migration, the collector also reads the legacy `~/.claudepet/events/` inbox and installation replaces legacy owned hooks safely.
 
-Codex permission checks remain **unconfirmed** in the activity panel and do not
-trigger the red attention signal: automatic review or another hook may handle
-them without asking you. The current hook interface does not establish whether
-a human approval dialog is visible, so real Codex command approvals also remain
-unconfirmed. Codex structured questions still trigger attention normally.
+Codex permission hooks alone remain **unconfirmed**: automatic review or another
+hook may handle them without asking you. When a compatible local Codex IDE IPC
+stream is available, AgentPup passively follows it and confirms approval requests
+actually delivered to the UI. Resolution and disconnects clear that evidence.
+This adapter was checked against extension **26.1106.51428**, IPC stream version
+11, over the same user's Unix socket in WSL. Native Windows IDE IPC and remote
+hosts are not covered by this adapter. Unsupported versions fall back to hooks
+and transcripts; elapsed time never confirms an approval. No new Codex server
+is started and no prompts, decisions, or control requests are forwarded.
+
+Agent activity shows one collapsed row per session:
+**project / session title (number of agents) ›**. Expand it to see the main agent
+and its subagents. Pending-input and work counts remain visible when collapsed;
+the pet's green, red, and orange counts represent sessions, counting each session
+at most once per status even when several subagents share it. A session can be
+working and need input simultaneously. Expansion stays in place
+while status updates arrive. Names come from Codex's saved session index or
+compatible IDE metadata and Claude Code's explicit custom titles; sessions
+without an available title show **Untitled session**. Prompt text is never used
+as a naming fallback.
 
 Automatic roaming is disabled in the default Windows run while mixed-DPI and multi-monitor positioning is being validated. Use the round-arrow button beside the pet to move it clockwise to the next corner of its current display. The vertical status bar stays nearest the screen edge, with the pet positioned inward from it.
 

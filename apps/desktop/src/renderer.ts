@@ -27,7 +27,10 @@ import {
   canDismissAgent,
   dismissAllDismissibleAgents,
   limitFinishedAgents,
-  providerPresentation
+  providerPresentation,
+  groupSessionAgents,
+  aggregateSessionStatus,
+  type SessionAgentGroup
 } from "./agent-view.js";
 
 declare global {
@@ -522,20 +525,63 @@ function renderAgent(key: string, agent: AgentStatus): HTMLLIElement {
   return row;
 }
 
+const expandedSessions = new Set<string>();
+
+function renderSession(group: SessionAgentGroup): HTMLLIElement {
+  const row = document.createElement("li");
+  row.className = "session-group";
+  const details = document.createElement("details");
+  details.open = expandedSessions.has(group.key);
+  const header = document.createElement("summary");
+  header.className = "agent-row session-heading";
+  const title = document.createElement("span");
+  title.className = "agent-heading";
+  title.textContent = `${group.project} / ${group.title} (${group.count} ${group.count === 1 ? "agent" : "agents"})`;
+  title.title = title.textContent;
+  const provider = document.createElement("span");
+  provider.className = "agent-provider";
+  provider.textContent = providerPresentation(group.agents[0]![1].identity.provider).label;
+  const state = document.createElement("span");
+  state.className = "agent-state";
+  const counts = group.summary;
+  state.textContent = [
+    counts.needsYou > 0 ? `${counts.needsYou} need you` : "",
+    counts.working > 0 ? `${counts.working} working` : "",
+    counts.resultsReady > 0 ? `${counts.resultsReady} ready` : ""
+  ].filter(Boolean).join(" · ") || stateLabel(group.agents[0]![1]);
+  header.dataset.needsYou = String(counts.needsYou > 0);
+  const arrow = document.createElement("span");
+  arrow.className = "session-arrow";
+  arrow.textContent = "›";
+  arrow.setAttribute("aria-hidden", "true");
+  header.append(createProviderIcon(group.agents[0]![1]), title, provider, state, arrow);
+  const children = document.createElement("ul");
+  children.className = "session-agents";
+  children.append(...group.agents.map(([key, agent]) => renderAgent(key, agent)));
+  details.append(header, children);
+  details.addEventListener("toggle", () => {
+    if (details.open) expandedSessions.add(group.key);
+    else expandedSessions.delete(group.key);
+    scheduleWindowShape();
+  });
+  row.append(details);
+  return row;
+}
+
 function render(nextState: StatusState): void {
   currentStatus = nextState;
   const state = limitFinishedAgents(
     applyAgentDismissals(nextState, dismissedAgents),
     preferences.maxFinishedAgents
   );
-  const summary = aggregateStatus(state);
+  const summary = { ...aggregateStatus(state), ...aggregateSessionStatus(state) };
   workingCount.textContent = String(summary.working);
   needsCount.textContent = String(summary.needsYou);
   readyCount.textContent = String(summary.resultsReady);
-  workingMetric.setAttribute("aria-label", `${summary.working} working`);
-  needsMetric.setAttribute("aria-label", `${summary.needsYou} need you`);
-  readyMetric.setAttribute("aria-label", `${summary.resultsReady} ready`);
-  const statusLabel = `Show monitored agents: ${summary.working} working, ${summary.needsYou} need you, ${summary.resultsReady} ready`;
+  workingMetric.setAttribute("aria-label", `${summary.working} sessions working`);
+  needsMetric.setAttribute("aria-label", `${summary.needsYou} sessions need you`);
+  readyMetric.setAttribute("aria-label", `${summary.resultsReady} sessions ready`);
+  const statusLabel = `Show monitored sessions: ${summary.working} working, ${summary.needsYou} need you, ${summary.resultsReady} ready`;
   toggle.setAttribute("aria-label", statusLabel);
   statusToggle.setAttribute("aria-label", statusLabel);
 
@@ -551,9 +597,11 @@ function render(nextState: StatusState): void {
     visibleAgents.length === 0 ? "No live agent activity" : `${visibleAgents.length} live agents`;
   if (panelView === "activity") panelTitle.textContent = activityPanelTitle;
   agentList.replaceChildren(
-    ...visibleAgents
-      .sort(([, left], [, right]) => sortRank(left) - sortRank(right))
-      .map(([key, agent]) => renderAgent(key, agent))
+    ...groupSessionAgents(visibleAgents)
+      .sort((left, right) =>
+        Math.min(...left.agents.map(([, agent]) => sortRank(agent))) -
+        Math.min(...right.agents.map(([, agent]) => sortRank(agent))))
+      .map(renderSession)
   );
   if (panelView === "diagnostics") void refreshDiagnostics();
 }

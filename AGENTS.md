@@ -40,6 +40,14 @@ Follow a Test-Driven Development philosophy where accurate tests are built befor
 
 ## Agent integration rules
 
+- Codex IDE approval evidence can come from a passive follower of the existing
+  same-user local IPC stream (verified extension 26.1106.51428, stream version 11,
+  WSL Unix socket). This is versioned, fallible compatibility, not a public
+  attach-to-every-session API. Never start/resume sessions or forward approval
+  decisions/control requests. Retain only title/status/request metadata, clear
+  uncertain state on gaps/disconnects, and keep permission hooks provisional
+  without explicit UI evidence. See the validation ledger for platform limits.
+
 - Cursor uses local lifecycle hooks and hook-inbox recovery, with a native Windows collector alongside WSL. Permission dialogs, structured questions, active child discovery, and cloud/remote Cursor agents are not yet claimed. See README and the validation ledger before extending coverage; never interpret ordinary Cursor tool execution as a human approval request.
 
 - Prefer documented runtime events and lifecycle hooks. Use watched transcripts or read-only metadata only for discovery, recovery, and explicitly labeled fallback behavior.

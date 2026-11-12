@@ -248,7 +248,7 @@ export function reconcileHookSnapshots(
         ...(event.parentAgentId === undefined ? {} : { parentAgentId: event.parentAgentId }),
         displayName:
           event.agentId === "root"
-            ? `Session ${event.sessionId.slice(0, 8)}`
+            ? "Untitled session"
             : `Agent ${event.agentId.slice(0, 8)}`,
         project: event.project,
         observedAt: "1970-01-01T00:00:00.000Z",

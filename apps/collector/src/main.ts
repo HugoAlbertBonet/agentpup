@@ -13,6 +13,8 @@ import { inspectIntegration } from "../../../packages/integration/src/installer.
 import { providerVersion } from "../../../packages/integration/src/provider-command.js";
 import { agentPupDataHomes } from "../../../packages/integration/src/product-paths.js";
 import { collectorPrefixForEnvironment } from "../../../packages/collectors/src/collector-identity.js";
+import { readCodexSessionNames } from "../../../packages/collectors/src/session-names.js";
+import { startCodexIdeObserver, applyCodexIdeState } from "../../../packages/collectors/src/codex-ide.js";
 
 const home = os.homedir();
 const collectorPrefix = collectorPrefixForEnvironment(
@@ -27,6 +29,9 @@ let previousFingerprint = "";
 let lastPublishedAt = 0;
 let scanInProgress = false;
 let stopped = false;
+const ideObserver = startCodexIdeObserver(process.env.CODEX_HOME ?? path.join(home, ".codex"), () => {
+  // The regular scan batches chat-stream changes instead of rescanning per token.
+});
 
 const versions = {
   codex: providerVersion("codex"),
@@ -67,7 +72,7 @@ async function scanOnce(): Promise<void> {
   scanInProgress = true;
   try {
     const now = Date.now();
-    const [transcriptSessions, hookInboxes] = await Promise.all([
+    const [transcriptSessions, hookInboxes, codexNames] = await Promise.all([
       scanTranscriptSessions({
         codexHome: process.env.CODEX_HOME ?? path.join(home, ".codex"),
         claudeHome: process.env.CLAUDE_CONFIG_DIR ?? path.join(home, ".claude"),
@@ -75,19 +80,26 @@ async function scanOnce(): Promise<void> {
         limitPerProvider: 20,
         now
       }),
-      Promise.all(agentPupHomes.map((dataHome) => readHookInbox(dataHome, now)))
+      Promise.all(agentPupHomes.map((dataHome) => readHookInbox(dataHome, now))),
+      readCodexSessionNames(process.env.CODEX_HOME ?? path.join(home, ".codex"))
     ]);
     const hookEvents = hookInboxes.flat();
     const providers = await providerDiagnostics(hookEvents);
-    const sessions = reconcileHookSnapshots(
+    let sessions = reconcileHookSnapshots(
       transcriptSessions,
       hookEvents,
       collectorPrefix,
       now
-    ).filter(
-      (session) =>
-        session.requests.length > 0 || now - Date.parse(session.observedAt) <= 30 * 60_000
     );
+    ideObserver.follow(sessions.filter(session => session.provider === "codex" && session.agentId === "root")
+      .map(session => session.sessionId));
+    for (const session of sessions) {
+      if (session.provider === "codex") {
+        session.displayName = codexNames.get(session.agentId === "root" ? session.sessionId : session.agentId) ?? session.displayName;
+      }
+    }
+    sessions = applyCodexIdeState(sessions, ideObserver.state.threads(), collectorPrefix, new Date(now).toISOString())
+      .filter(session => session.requests.length > 0 || now - Date.parse(session.observedAt) <= 30 * 60_000);
     const fingerprint = JSON.stringify({ sessions, providers });
     if (fingerprint === previousFingerprint && now - lastPublishedAt < heartbeatIntervalMs) return;
     previousFingerprint = fingerprint;
@@ -116,6 +128,7 @@ void scanOnce();
 
 function stop(): void {
   stopped = true;
+  ideObserver.stop();
   clearInterval(interval);
   process.exit(0);
 }

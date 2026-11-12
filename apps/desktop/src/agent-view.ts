@@ -3,6 +3,55 @@ import type {
   Provider,
   StatusState
 } from "../../../packages/status/src/index.js";
+import { aggregateStatus, createStatusState } from "../../../packages/status/src/index.js";
+
+export interface SessionAgentGroup {
+  key: string;
+  title: string;
+  project: string;
+  count: number;
+  agents: Array<[string, AgentStatus]>;
+  summary: ReturnType<typeof aggregateStatus>;
+}
+
+export function groupSessionAgents(entries: Array<[string, AgentStatus]>): SessionAgentGroup[] {
+  const grouped = new Map<string, Array<[string, AgentStatus]>>();
+  for (const entry of entries) {
+    const identity = entry[1].identity;
+    const key = JSON.stringify([identity.provider, identity.collectorId, identity.sessionId]);
+    const members = grouped.get(key) ?? [];
+    members.push(entry);
+    grouped.set(key, members);
+  }
+  return [...grouped].map(([key, members]) => {
+    members.sort(([, left], [, right]) => Number(left.identity.parentAgentId !== undefined) - Number(right.identity.parentAgentId !== undefined));
+    const root = members.find(([, value]) => value.identity.parentAgentId === undefined)?.[1];
+    const first = members[0]![1];
+    const state = createStatusState();
+    state.agents = Object.fromEntries(members);
+    return {
+      key,
+      title: root?.identity.displayName ?? "Untitled session",
+      project: (root ?? first).identity.project,
+      count: members.length,
+      agents: members,
+      summary: aggregateStatus(state)
+    };
+  });
+}
+
+/** Badge counts use sessions; individual-agent state remains available in groups. */
+export function aggregateSessionStatus(state: StatusState): {
+  working: number; needsYou: number; resultsReady: number;
+} {
+  const summary = { working: 0, needsYou: 0, resultsReady: 0 };
+  for (const group of groupSessionAgents(Object.entries(state.agents))) {
+    summary.working += Number(group.summary.working > 0);
+    summary.needsYou += Number(group.summary.needsYou > 0);
+    summary.resultsReady += Number(group.summary.resultsReady > 0);
+  }
+  return summary;
+}
 
 export interface ProviderPresentation {
   label: string;

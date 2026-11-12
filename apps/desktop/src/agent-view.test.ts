@@ -7,7 +7,9 @@ import {
   canDismissAgent,
   dismissAllDismissibleAgents,
   limitFinishedAgents,
-  providerPresentation
+  providerPresentation,
+  groupSessionAgents,
+  aggregateSessionStatus
 } from "./agent-view.js";
 import { aggregateStatus, createStatusState, type AgentStatus } from "../../../packages/status/src/index.js";
 
@@ -34,6 +36,50 @@ function agent(overrides: Partial<AgentStatus> = {}): AgentStatus {
 }
 
 describe("agent activity presentation", () => {
+  it("counts each working or ready session once regardless of its number of agents", () => {
+    const state = createStatusState();
+    const root = agent({ activity: "working", resultReady: false });
+    state.agents.root = root;
+    state.agents.child = agent({ ...root, identity: { ...root.identity, agentId: "child", parentAgentId: "root" } });
+    state.agents.other = agent({ identity: { ...root.identity, sessionId: "session-two" } });
+    state.agents.otherChild = agent({ identity: { ...root.identity, sessionId: "session-two", agentId: "other-child", parentAgentId: "root" } });
+    expect(aggregateStatus(state)).toMatchObject({ working: 2, resultsReady: 2 });
+    expect(aggregateSessionStatus(state)).toEqual({ working: 1, needsYou: 0, resultsReady: 1 });
+    state.agents.native = agent({ ...root, identity: { ...root.identity, collectorId: "native:win32:claude-code" } });
+    expect(aggregateSessionStatus(state).working).toBe(2);
+  });
+
+  it("counts a session with multiple pending agent requests once and preserves simultaneous work", () => {
+    const state = createStatusState();
+    const root = agent({ activity: "working", resultReady: false });
+    const pending = { requestId: "question", kind: "question" as const, blocking: false,
+      confidence: "confirmed" as const, evidence: "test", openedAt: root.lastObservedAt,
+      updatedAt: root.lastObservedAt, updatedSequence: 1, resolution: null, resolved: false };
+    state.agents.root = { ...root, requests: { question: pending } };
+    state.agents.child = { ...root, identity: { ...root.identity, agentId: "child", parentAgentId: "root" }, requests: { question: { ...pending } } };
+    expect(aggregateSessionStatus(state)).toEqual({ working: 1, needsYou: 1, resultsReady: 0 });
+    state.agents.root.requests.question!.confidence = "provisional";
+    expect(aggregateSessionStatus(state).needsYou).toBe(1);
+    state.agents.child.requests.question!.resolved = true;
+    expect(aggregateSessionStatus(state).needsYou).toBe(0);
+  });
+  it("groups parent and children by provider, collector, and session, with hidden children counted", () => {
+    const root = agent();
+    root.identity.displayName = "Improve search";
+    const child = agent({ identity: { ...root.identity, agentId: "child", parentAgentId: "root", displayName: "Reviewer" }, activity: "working", resultReady: false });
+    const other = agent({ identity: { ...root.identity, collectorId: "native:win32:claude-code" } });
+    const groups = groupSessionAgents([["child", child], ["root", root], ["other", other]]);
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toMatchObject({ title: "Improve search", project: "project", count: 2 });
+    expect(groups[0]!.agents.map(([key]) => key)).toEqual(["root", "child"]);
+    expect(groups[0]!.summary.working).toBe(1);
+    expect(groups[0]!.key).not.toBe(groups[1]!.key);
+  });
+
+  it("keeps an orphan child visible without presenting its name as a session title", () => {
+    const child = agent({ identity: { ...agent().identity, agentId: "child", parentAgentId: "root", displayName: "Reviewer" } });
+    expect(groupSessionAgents([["child", child]])[0]).toMatchObject({ title: "Untitled session", count: 1 });
+  });
   it("provides distinct visual identities for Codex and Claude Code", () => {
     expect(providerPresentation("codex")).toEqual({ label: "Codex", icon: "codex" });
     expect(providerPresentation("claude-code")).toEqual({

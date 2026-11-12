@@ -266,3 +266,20 @@ that the frontend has actually opened a human approval dialog is still required
 to claim Codex command-approval attention coverage; structured-question attention
 is retained. Never substitute silence or elapsed time for this evidence.
 Reference: [official Codex hook semantics](https://learn.chatgpt.com/docs/hooks).
+
+## Session presentation and IDE approval evidence (2026-11-11)
+
+Implemented saved session names and collapsed session groups with per-agent
+details and group status counts. Codex transcript parent metadata now associates
+persisted children with the parent group and avoids duplicate child result
+badges. Explicit titles are bounded and sanitized; absent titles use a neutral
+label rather than prompt text.
+
+The compatible local Codex IDE IPC follower provides explicit UI request
+evidence alongside the conservative permission hooks. It subscribes only to
+existing local streams, discards conversation/tool bodies, declines control
+requests, and drops uncertain state on disconnect, ownership change, protocol
+mismatch, or revision gaps. Measured compatibility is extension 26.1106.51428,
+IPC version 11 in WSL; this undocumented transport remains versioned and
+fallible. Native Windows IPC, remote hosts, and other versions are unclaimed.
+Real approval UI acceptance and visual group interaction still need validation.

@@ -74,6 +74,14 @@ lifecycle structure or aggregate counts.
 
 ### Collector and desktop behavior
 
+- On 2026-10-11 the user reported the tray icon absent after reboot. The cached
+  native Windows development runtime and app existed, but no AgentPup-targeted
+  Windows Run entry or running app was present. `npm run autostart:windows`
+  restored `dev.agentpup.desktop` and launched one controller instance. The
+  registration targets the current stable LocalAppData runtime/app, retains
+  the Ubuntu WSL argument, and has no disabled StartupApproved entry. The cause
+  of the missing registration is undetermined; a subsequent reboot and visual
+  tray confirmation have not yet been measured.
 - Killing the active WSL collector causes the Windows host to start one
   replacement collector. State recovers without duplicate agents, and
   diagnostics returns to connected.
@@ -506,3 +514,34 @@ remains unavailable in the current environment.
   review remains pending. Real Codex command approvals remain unconfirmed until
   a verified human-facing pending source is available; structured questions
   continue to provide confirmed attention.
+
+## Session names, collapsed groups, and Codex IDE approvals (2026-11-11)
+
+- Added tests before implementing explicit saved names, title renaming,
+  malformed/missing index records, title sanitization, parent/child grouping,
+  collector isolation, orphan children, persisted Codex parent metadata, and
+  keeping user-created forks independent of subagent groups.
+- Added a passive adapter for the existing Codex IDE IPC stream, verified
+  against installed extension 26.1106.51428 / protocol version 11. A live
+  read-only smoke check received two named local sessions, one active, and no
+  pending UI approval requests. No session was started or resumed and no
+  approval decision or prompt was sent. A live approval was not observed.
+- Automated checks cover actual pending UI request evidence plus the runtime
+  wait flag, automatic review without a UI request, resolution, revision gaps,
+  unsupported versions/remote hosts, prototype paths, bounded split/coalesced
+  frames, observer-only messages over a real temporary socket, and state
+  clearing when the socket or owning IDE client disconnects.
+- The activity list uses native keyboard-accessible disclosure controls,
+  collapsed by default with expansion retained across status updates. Group
+  headings show status counts even when children are hidden. Aggregate badges
+  now count sessions once per status, while expanded groups retain individual
+  agent counts. Tests cover multiple working/ready agents in one session,
+  multiple pending requests, provisional/resolved evidence, simultaneous work
+  and input, and collector isolation.
+- Final validation passed `npm run check`: 208 tests across 43 files,
+  TypeScript checking, and production builds. The native Windows development
+  app was refreshed and restarted with these changes.
+- Native Windows IDE IPC and remote Codex sessions remain unsupported by this
+  Unix-socket adapter; hooks/transcript recovery remain available. Real VS Code
+  approval allow/deny/cancel, automatic-review negative checks, title renaming,
+  and visual expand/collapse checks remain manual acceptance work.
