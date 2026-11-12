@@ -29,6 +29,27 @@ describe("session names", () => {
     expect(sessionTitle("x".repeat(300))).toHaveLength(160);
   });
 
+  it("uses Claude generated titles and tracks updated generated names", () => {
+    const session = parseClaudeTranscript([
+      { type: "ai-title", sessionId: "claude-one", aiTitle: "Initial title" },
+      { type: "ai-title", sessionId: "claude-one", aiTitle: "Review API\nchanges" },
+      { type: "last-prompt", sessionId: "claude-one", lastPrompt: "PRIVATE_PROMPT" }
+    ], context);
+    expect(session?.displayName).toBe("Review API changes");
+    expect(JSON.stringify(session)).not.toContain("PRIVATE_PROMPT");
+  });
+
+  it("prefers a manual Claude rename over generated titles regardless of record order", () => {
+    const custom = { type: "custom-title", sessionId: "claude-one", customTitle: "My API review" };
+    const generated = { type: "ai-title", sessionId: "claude-one", aiTitle: "Generated name" };
+    for (const records of [[custom, generated], [generated, custom]]) {
+      expect(parseClaudeTranscript(records, context)?.displayName).toBe("My API review");
+    }
+    expect(parseClaudeTranscript([
+      generated, { type: "ai-title", sessionId: "claude-one", aiTitle: { invalid: true } }
+    ], context)?.displayName).toBe("Generated name");
+  });
+
   it("identifies persisted Codex children as members of their parent session", () => {
     const child = parseCodexTranscript([
       { type: "session_meta", payload: { id: "child-one", parent_thread_id: "parent-one", source: { subagent: { other: "worker" } }, cwd: "/work/project" } },

@@ -117,7 +117,8 @@ the pet's green, red, and orange counts represent sessions, counting each sessio
 at most once per status even when several subagents share it. A session can be
 working and need input simultaneously. Expansion stays in place
 while status updates arrive. Names come from Codex's saved session index or
-compatible IDE metadata and Claude Code's explicit custom titles; sessions
+compatible IDE metadata and Claude Code's saved generated or custom titles
+(manual renames take priority); sessions
 without an available title show **Untitled session**. Prompt text is never used
 as a naming fallback.
 

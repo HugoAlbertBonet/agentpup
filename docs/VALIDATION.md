@@ -545,3 +545,18 @@ remains unavailable in the current environment.
   Unix-socket adapter; hooks/transcript recovery remain available. Real VS Code
   approval allow/deny/cancel, automatic-review negative checks, title renaming,
   and visual expand/collapse checks remain manual acceptance work.
+
+## Claude Code generated session names (2026-11-11)
+
+- The user reported Claude Code displaying `Untitled session`. Inspection of
+  recent local transcript metadata found `ai-title` / `aiTitle` records; only
+  manually assigned `custom-title` / `customTitle` records were handled.
+- Added failing tests before implementing generated titles, latest-title
+  updates, manual-name precedence in either record order, malformed metadata,
+  and exclusion of prompt bodies. Both name sources use the existing bounded
+  title sanitizer; no prompt-derived fallback is introduced.
+- `npm run check` passed 210 tests across 43 files, TypeScript checking, and
+  production builds. A bounded live collector smoke check recovered names for
+  all seven discovered Claude Code sessions without printing their names or
+  transcript bodies. The native Windows app was refreshed and restarted;
+  visual confirmation remains pending.

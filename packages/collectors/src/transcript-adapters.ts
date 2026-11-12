@@ -185,6 +185,7 @@ export function parseClaudeTranscript(
 ): LiveSessionSnapshot | null {
   let sessionId: string | undefined;
   let displayName: string | undefined;
+  let generatedTitle: string | undefined;
   let cwd: string | undefined;
   let activity: Activity = "unknown";
   let turnId = "unknown-turn";
@@ -201,6 +202,7 @@ export function parseClaudeTranscript(
     observedAt = timestamp(record, context.modifiedAt);
     const recordType = string(record.type);
     if (recordType === "custom-title") displayName = sessionTitle(record.customTitle) ?? displayName;
+    if (recordType === "ai-title") generatedTitle = sessionTitle(record.aiTitle) ?? generatedTitle;
     const message = object(record.message);
     const content = Array.isArray(message?.content) ? message.content : [];
     const origin = object(record.origin);
@@ -321,7 +323,7 @@ export function parseClaudeTranscript(
     collectorId: context.collectorId,
     sessionId,
     agentId: "root",
-    displayName: displayName ?? "Untitled session",
+    displayName: displayName ?? generatedTitle ?? "Untitled session",
     project: projectName(cwd),
     observedAt,
     activity,
