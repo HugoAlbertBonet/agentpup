@@ -560,3 +560,23 @@ remains unavailable in the current environment.
   all seven discovered Claude Code sessions without printing their names or
   transcript bodies. The native Windows app was refreshed and restarted;
   visual confirmation remains pending.
+
+## Claude Code five-hour usage-limit stop (2026-11-11)
+
+- The user reported a session staying green after Claude Code hit its five-hour
+  limit. Local Claude Code 2.1.322 transcript metadata contained a terminal
+  assistant record with `isApiErrorMessage: true`, `error: rate_limit`, and
+  status 429 for both the root and its subagent. The root was previously shown
+  as a normal completed response; the child transcript was incorrectly deduped
+  under the root, leaving the child's older working hook state active.
+- Regression tests first reproduced both issues. Claude sidechain `agentId`
+  metadata now preserves the child identity, and terminal usage-limit records
+  mark the turn failed and clear pending questions. Only the root contributes
+  a ready result. A later submitted turn can become working normally; retrying
+  system API errors and ordinary tool failures do not trigger this rule.
+- `npm run check` passed 214 tests across 43 files, TypeScript checking, and
+  production builds. A bounded live collector/reconciliation smoke check of
+  the affected session reported two failed agents, zero working, no pending
+  requests, and one root result ready. No transcript/error bodies were printed.
+  The Windows development app was refreshed and restarted; visual confirmation
+  remains pending.

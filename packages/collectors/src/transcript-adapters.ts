@@ -184,6 +184,7 @@ export function parseClaudeTranscript(
   context: TranscriptAdapterContext
 ): LiveSessionSnapshot | null {
   let sessionId: string | undefined;
+  let agentId = "root";
   let displayName: string | undefined;
   let generatedTitle: string | undefined;
   let cwd: string | undefined;
@@ -198,6 +199,7 @@ export function parseClaudeTranscript(
     const record = object(value);
     if (record === undefined) continue;
     sessionId ??= string(record.sessionId);
+    if (record.isSidechain === true) agentId = string(record.agentId) ?? agentId;
     cwd = string(record.cwd) ?? cwd;
     observedAt = timestamp(record, context.modifiedAt);
     const recordType = string(record.type);
@@ -270,6 +272,12 @@ export function parseClaudeTranscript(
     if (recordType !== "assistant") continue;
     const messageId = string(message?.id);
     if (messageId !== undefined) turnId = messageId;
+    if (record.isApiErrorMessage === true && record.error === "rate_limit") {
+      activity = "failed";
+      resultReady = true;
+      pending.clear();
+      continue;
+    }
     let hasToolUse = false;
     let hasText = false;
     let openedBlockingRequest = false;
@@ -322,13 +330,14 @@ export function parseClaudeTranscript(
     provider: "claude-code",
     collectorId: context.collectorId,
     sessionId,
-    agentId: "root",
-    displayName: displayName ?? generatedTitle ?? "Untitled session",
+    agentId,
+    ...(agentId === "root" ? {} : { parentAgentId: "root" }),
+    displayName: agentId === "root" ? displayName ?? generatedTitle ?? "Untitled session" : "Subagent",
     project: projectName(cwd),
     observedAt,
-    activity,
+    activity: agentId !== "root" && activity === "completed" ? "ended" : activity,
     turnId,
-    resultReady,
+    resultReady: agentId === "root" && resultReady,
     requests: [...pending.values()]
   };
 }

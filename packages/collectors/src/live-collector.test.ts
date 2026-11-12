@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { aggregateStatus, replayEvents } from "../../status/src/index.js";
+import { normalizeHookPayload, reconcileHookSnapshots } from "./hook-events.js";
 import {
   createSnapshotEvents,
   findRecentJsonlFiles,
@@ -13,6 +14,24 @@ import {
 } from "./live-collector.js";
 
 describe("live transcript collector", () => {
+  it("recovers both parent and child quota stops over older working hooks", async () => {
+    const home = await mkdtemp(path.join(os.tmpdir(), "pup-limit-"));
+    const project = path.join(home, "projects", "project");
+    const children = path.join(project, "session-one", "subagents");
+    await mkdir(children, { recursive: true });
+    const now = Date.now();
+    const record = { type: "assistant", sessionId: "session-one", timestamp: new Date(now).toISOString(),
+      isApiErrorMessage: true, error: "rate_limit", message: { content: [{ type: "text", text: "PRIVATE_LIMIT" }] } };
+    await writeFile(path.join(project, "session-one.jsonl"), JSON.stringify(record) + "\n");
+    await writeFile(path.join(children, "agent-helper.jsonl"), JSON.stringify({ ...record, isSidechain: true, agentId: "helper" }) + "\n");
+    const sessions = await scanTranscriptSessions({ codexHome: path.join(home, "missing"), claudeHome: home,
+      collectorPrefix: "test", limitPerProvider: 20, now });
+    const started = normalizeHookPayload("claude-code", { hook_event_name: "SubagentStart", session_id: "session-one", agent_id: "helper" }, new Date(now - 1000).toISOString())!;
+    const reconciled = reconcileHookSnapshots(sessions, [started], "test", now);
+    expect(reconciled).toHaveLength(2);
+    expect(aggregateStatus(replayEvents(createSnapshotEvents(reconciled, ["test:claude-code"], new Date(now).toISOString()))))
+      .toMatchObject({ working: 0, needsYou: 0, resultsReady: 1 });
+  });
   it("does not let a deep project tree starve a sibling transcript", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "claudepet-walk-"));
     await mkdir(path.join(root, "project-one"));

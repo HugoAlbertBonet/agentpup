@@ -455,7 +455,7 @@ function stateLabel(agent: AgentStatus): string {
   }
   if (!agent.sourceConnected) return "Collector disconnected";
   if (agent.activity === "unknown") return "Discovered · live status unavailable";
-  if (agent.activity === "failed") return "Failed · result ready";
+  if (agent.activity === "failed") return agent.resultReady ? "Failed · result ready" : "Failed";
   if (agent.resultReady) return "Result ready";
   return agent.activity[0]!.toUpperCase() + agent.activity.slice(1);
 }

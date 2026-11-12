@@ -5,6 +5,40 @@ import { parseClaudeTranscript, parseCodexTranscript } from "./transcript-adapte
 const now = Date.parse("2026-09-25T12:05:00.000Z");
 
 describe("transcript lifecycle adapters", () => {
+  it("finishes a Claude turn on its structured usage-limit error and clears pending questions", () => {
+    const records = [
+      { type: "assistant", sessionId: "limited", message: { content: [
+        { type: "tool_use", id: "question", name: "AskUserQuestion", input: { prompt: "PRIVATE" } }
+      ] } },
+      { type: "assistant", sessionId: "limited", isApiErrorMessage: true, error: "rate_limit", apiErrorStatus: 429,
+        message: { id: "limit-message", stop_reason: "stop_sequence", content: [{ type: "text", text: "PRIVATE_LIMIT_MESSAGE" }] } }
+    ];
+    const context = { collectorId: "test", modifiedAt: now, now };
+    const snapshot = parseClaudeTranscript(records, context);
+    expect(snapshot).toMatchObject({ activity: "failed", resultReady: true, requests: [] });
+    expect(JSON.stringify(snapshot)).not.toContain("PRIVATE");
+    expect(parseClaudeTranscript([...records, { type: "user", sessionId: "limited", uuid: "retry",
+      origin: { kind: "human" }, message: { content: [{ type: "text", text: "PRIVATE_RETRY" }] }
+    }], context)).toMatchObject({ activity: "working", resultReady: false, requests: [] });
+  });
+
+  it("keeps Claude subagent identity and does not duplicate a usage-limit result", () => {
+    const snapshot = parseClaudeTranscript([
+      { type: "assistant", sessionId: "parent", isSidechain: true, agentId: "helper",
+        isApiErrorMessage: true, error: "rate_limit", message: { content: [{ type: "text", text: "PRIVATE" }] } }
+    ], { collectorId: "test", modifiedAt: now, now });
+    expect(snapshot).toMatchObject({ sessionId: "parent", agentId: "helper", parentAgentId: "root",
+      activity: "failed", resultReady: false, requests: [] });
+  });
+
+  it("does not treat a retrying system API error or ordinary tool error as a usage-limit stop", () => {
+    const snapshot = parseClaudeTranscript([
+      { type: "assistant", sessionId: "retrying", message: { content: [{ type: "tool_use", id: "tool", name: "Bash" }] } },
+      { type: "user", sessionId: "retrying", message: { content: [{ type: "tool_result", tool_use_id: "tool", is_error: true }] } },
+      { type: "system", sessionId: "retrying", subtype: "api_error", error: "rate_limit", retryInMs: 1000 }
+    ], { collectorId: "test", modifiedAt: now, now });
+    expect(snapshot).toMatchObject({ activity: "working", resultReady: false });
+  });
   it("maps Codex lifecycle and structured questions without retaining private content", () => {
     const records = [
       {
